@@ -253,7 +253,7 @@ export class OpenRouterProvider implements LLMProvider {
     } catch (error) {
         yield {
             type: "error",
-            message: error instanceof Error ? error.message : "Unknown error"
+            message: error instanceof Error ? error.message : String(error)
             };
         }
     }
