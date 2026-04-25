@@ -41,3 +41,19 @@ export type ConversationState = {
 }
 
 
+export type ToolDefinition = {
+    name: string;
+    description: string;
+    parameters: {
+        type: "object";
+        properties: Record<string, unknown>;
+        required?: string[];
+    }
+}
+
+export type ToolHandler = (args: unknown, signal?: AbortSignal) => Promise<string>;
+
+export type Tool = {
+    definition: ToolDefinition;
+    handler: ToolHandler;
+}
