@@ -1,13 +1,13 @@
 import type { Message, ToolDefinition } from "../types";    
-import type { StreamEvents } from "./events";
+import type { StreamEvent } from "./events";
 
-export type Context = {
+export type LLMContext = {
     systemPrompt: string;
     messages: Message[];
     tools: ToolDefinition[];
 }
 
-export interface Provider {
-    stream(context: Context, signal?: AbortSignal): AsyncIterable<StreamEvents>
+export interface LLMProvider {
+    stream(context: LLMContext, signal?: AbortSignal): AsyncIterable<StreamEvent>
 }
 

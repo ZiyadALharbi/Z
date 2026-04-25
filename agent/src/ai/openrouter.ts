@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { JsonObject, JsonValue, AssistantMessage, ContentBlock, Message, StopReason, ToolDefinition } from "../types";
-import type { Context, Provider  } from "./provider";
-import type { StreamEvents } from "./events";
+import type { LLMContext, LLMProvider  } from "./provider";
+import type { StreamEvent } from "./events";
 
     // private client: OpenAI;
     // private model: string;
@@ -143,7 +143,7 @@ function toOpenRouterTool(
 
 
 
-export class OpenRouterProvider implements Provider {
+export class OpenRouterProvider implements LLMProvider {
     private readonly client: OpenAI;
     private readonly model: string;
 
@@ -160,7 +160,7 @@ export class OpenRouterProvider implements Provider {
             baseURL: options.baseURL ?? 'https://openrouter.ai/api/v1',
         });
     }
-    async *stream(context: Context, signal?: AbortSignal): AsyncIterable<StreamEvents> {
+    async *stream(context: LLMContext, signal?: AbortSignal): AsyncIterable<StreamEvent> {
         try {
             const contentBlocks: ContentBlock[] = [];
             let text = "";
