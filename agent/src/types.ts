@@ -1,3 +1,12 @@
+export type JsonPrimitive = string | number | boolean | null;
+
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type JsonObject = { [key: string]: JsonValue };
+
 export type StopReason = "stop" | "tool_calls" | "error" | "aborted" | "budget_exhausted";
 
 export type TextBlock = {
@@ -9,7 +18,7 @@ export type ToolCallBlock = {
     type: "toolCall";
     id: string;
     name: string;
-    arguments: unknown;
+    arguments: JsonObject;
 }
 
 export type ContentBlock = TextBlock | ToolCallBlock;
@@ -51,7 +60,7 @@ export type ToolDefinition = {
     }
 }
 
-export type ToolHandler = (args: unknown, signal?: AbortSignal) => Promise<string>;
+export type ToolHandler = (args: JsonObject, signal?: AbortSignal) => Promise<string>;
 
 export type Tool = {
     definition: ToolDefinition;
