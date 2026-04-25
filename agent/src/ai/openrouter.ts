@@ -211,7 +211,7 @@ export class OpenRouterProvider implements Provider {
                         existing.name = toolCallDelta.function.name;
                     }
                     if(toolCallDelta.function?.arguments){
-                        existing.argumentsText = toolCallDelta.function?.arguments
+                        existing.argumentsText += toolCallDelta.function?.arguments
                     }
 
                     toolCallBuffer.set(index, existing);
