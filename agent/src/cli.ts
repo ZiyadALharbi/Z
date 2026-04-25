@@ -2,11 +2,13 @@ import { OpenRouterProvider } from "./ai/openrouter";
 import { createListFilesTool } from "./tools/list-files";
 import { ToolRegistry } from "./registry";
 import { createReadFileTool } from "./tools/read-file";
+import { createGrepTool } from "./tools/grep";
 
 const registry = new ToolRegistry();
 
 registry.register(createListFilesTool({ cwd: process.cwd() }));
 registry.register(createReadFileTool({ cwd: process.cwd() }));
+registry.register(createGrepTool({ cwd: process.cwd() }));
 
 const provider = new OpenRouterProvider({
     model: "moonshotai/kimi-k2.6",
