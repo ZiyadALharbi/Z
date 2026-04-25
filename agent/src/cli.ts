@@ -1,4 +1,14 @@
 import { OpenRouterProvider } from "./ai/openrouter";
+import { createListFilesTool } from "./tools/list-files";
+import { ToolRegistry } from "./registry";
+
+const registry = new ToolRegistry();
+
+registry.register(
+  createListFilesTool({
+    cwd: process.cwd(),
+  }),
+);
 
 const provider = new OpenRouterProvider({
     model: "moonshotai/kimi-k2.6",
