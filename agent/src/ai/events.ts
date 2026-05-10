@@ -1,4 +1,4 @@
-import  type { AssistantMessage, JsonObject } from "../types";
+import type { AssistantMessage, JsonObject } from "../types";
 
 export type StreamEvent =
     | {type: "text_delta"; text: string}

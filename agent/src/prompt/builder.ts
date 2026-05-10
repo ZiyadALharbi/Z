@@ -55,8 +55,7 @@ export class SystemPromptBuilder {
             "You may call these tools when needed:",
             ...tools.map(formatToolDefinition),
         ].join("\n\n");
-    }
-        
+    }     
 }
 
 function formatToolDefinition(tool: ToolDefinition): string {
