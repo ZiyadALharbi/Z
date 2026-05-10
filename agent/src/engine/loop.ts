@@ -116,7 +116,7 @@ export async function* runAgentEngineLoop(
         role: "assistant",
         content: [],
         stopReason: "error",
-        errorMessage: "Provider stream ended without a final assistant message.",
+        errorMessage,
       };
 
       options.messages.push(message);
