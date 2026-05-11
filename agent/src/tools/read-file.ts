@@ -1,20 +1,10 @@
-/*
-The tool should:
-
-Accept { path: string }
-Resolve relative paths from cwd
-Read UTF-8 text files
-Reject directories
-Return file contents as a string
-Respect AbortSignal
-*/
-
 import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
-import type { JsonObject, Tool } from "../types";
+import type { Tool } from "../types";
+import type { Workspace } from "../workspace/workspace";
+import { requireString, throwIfAborted } from "./args";
 
 export type ReadFileToolOptions = {
-  cwd: string;
+  workspace: Workspace;
   maxBytes?: number;
 };
 
@@ -32,7 +22,8 @@ export function createReadFileTool(options: ReadFileToolOptions): Tool {
         properties: {
           path: {
             type: "string",
-            description: "File path to read. Relative paths are resolved from the current working directory.",
+            description:
+              "File path to read. Relative paths are resolved from the workspace root.",
           },
         },
         required: ["path"],
@@ -42,8 +33,8 @@ export function createReadFileTool(options: ReadFileToolOptions): Tool {
     handler: async (args, signal) => {
       throwIfAborted(signal);
 
-      const targetPath = getStringArg(args, "path");
-      const absolutePath = path.resolve(options.cwd, targetPath);
+      const targetPath = requireString(args, "path");
+      const absolutePath = options.workspace.resolveInsideRoot(targetPath);
 
       const fileStat = await stat(absolutePath);
 
@@ -59,23 +50,8 @@ export function createReadFileTool(options: ReadFileToolOptions): Tool {
 
       throwIfAborted(signal);
 
+      // Read only after validation and size checks pass.
       return await readFile(absolutePath, "utf8");
     },
   };
-}
-
-function getStringArg(args: JsonObject, key: string): string {
-  const value = args[key];
-
-  if (typeof value !== "string") {
-    throw new Error(`Expected "${key}" to be a string`);
-  }
-
-  return value;
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw new Error("Operation aborted");
-  }
 }
