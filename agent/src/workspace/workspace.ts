@@ -1,4 +1,3 @@
-// agent/src/workspace/workspace.ts
 import path from "node:path";
 
 export type WorkspaceOptions = {
