@@ -1,20 +1,18 @@
 /*
-The tool should:
+List Files Tool
 
-Accept { path: string }
-Resolve relative paths from a configured cwd
-List immediate children only for now
-Return a string the model can read
-Respect AbortSignal
-Avoid recursive listing in Phase 1
+Lists the immediate children of a directory inside the workspace.
+Path resolution and workspace escape protection are handled by Workspace.
+Argument parsing and abort checks are shared through tool helpers.
 */
 
 import { readdir } from "node:fs/promises";
-import path from "node:path";
-import type { JsonObject, Tool } from "../types";
+import type { Tool } from "../types";
+import type { Workspace } from "../workspace/workspace";
+import { requireString, throwIfAborted } from "./args";
 
 export type ListFilesToolOptions = {
-  cwd: string;
+  workspace: Workspace;
 };
 
 export function createListFilesTool(options: ListFilesToolOptions): Tool {
@@ -27,7 +25,8 @@ export function createListFilesTool(options: ListFilesToolOptions): Tool {
         properties: {
           path: {
             type: "string",
-            description: "Directory path to list. Relative paths are resolved from the current working directory.",
+            description:
+              "Directory path to list. Relative paths are resolved from the workspace root.",
           },
         },
         required: ["path"],
@@ -37,8 +36,8 @@ export function createListFilesTool(options: ListFilesToolOptions): Tool {
     handler: async (args, signal) => {
       throwIfAborted(signal);
 
-      const targetPath = getStringArg(args, "path");
-      const absolutePath = path.resolve(options.cwd, targetPath);
+      const targetPath = requireString(args, "path");
+      const absolutePath = options.workspace.resolveInsideRoot(targetPath);
 
       const entries = await readdir(absolutePath, { withFileTypes: true });
 
@@ -57,20 +56,4 @@ export function createListFilesTool(options: ListFilesToolOptions): Tool {
         .join("\n");
     },
   };
-}
-
-function getStringArg(args: JsonObject, key: string): string {
-  const value = args[key];
-
-  if (typeof value !== "string") {
-    throw new Error(`Expected "${key}" to be a string`);
-  }
-
-  return value;
-}
-
-function throwIfAborted(signal?: AbortSignal): void {
-  if (signal?.aborted) {
-    throw new Error("Operation aborted");
-  }
 }
