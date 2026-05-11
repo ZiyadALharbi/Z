@@ -1,14 +1,15 @@
 import { IterationBudget } from "../budget";
 import type { LLMProvider } from "../ai/provider";
 import { ToolRegistry } from "../registry";
-import type { AssistantMessage, Message, ToolCallBlock, UserMessage } from "../types";
+import type { AssistantMessage, ToolCallBlock, UserMessage } from "../types";
+import type { ConversationState } from "./conversation-state";
 import { SystemPromptBuilder } from "../prompt/builder";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 
 export type RunAgentEngineLoopOptions = {
   prompt: string;
-  messages: Message[];
+  conversation: ConversationState;
   provider: LLMProvider;
   registry: ToolRegistry;
   promptBuilder: SystemPromptBuilder;
@@ -16,6 +17,7 @@ export type RunAgentEngineLoopOptions = {
   toolExecutor?: ToolExecutor;
   signal?: AbortSignal;
 };
+
 
 export async function* runAgentEngineLoop(
   options: RunAgentEngineLoopOptions,
@@ -28,7 +30,7 @@ export async function* runAgentEngineLoop(
     content: options.prompt,
   };
 
-  options.messages.push(userMessage);
+  options.conversation.append(userMessage);
 
   yield {
     type: "run_started",
@@ -65,7 +67,7 @@ export async function* runAgentEngineLoop(
     for await (const event of options.provider.stream(
       {
         systemPrompt,
-        messages: options.messages,
+        messages: options.conversation.getProviderMessages(),
         tools: options.registry.getDefinitions(),
       },
       options.signal,
@@ -85,7 +87,7 @@ export async function* runAgentEngineLoop(
           errorMessage: event.message,
         };
 
-        options.messages.push(message);
+        options.conversation.append(message);
 
         yield {
           type: "error",
@@ -119,7 +121,7 @@ export async function* runAgentEngineLoop(
         errorMessage,
       };
 
-      options.messages.push(message);
+      options.conversation.append(message);
 
       yield {
         type: "error",
@@ -139,7 +141,7 @@ export async function* runAgentEngineLoop(
       return;
     }
 
-    options.messages.push(assistantMessage);
+    options.conversation.append(assistantMessage);
 
     yield {
       type: "assistant_message",
@@ -170,7 +172,7 @@ export async function* runAgentEngineLoop(
 
       const result = await toolExecutor.execute(toolCall, options.signal);
 
-      options.messages.push(result);
+      options.conversation.append(result);
 
       yield {
         type: "tool_finished",

@@ -1,3 +1,11 @@
+/*
+AgentEngine
+
+Thin stateful wrapper around the pure AgentEngine Loop.
+Owns provider configuration, tool registration, conversation state, and
+cancellation for an interactive session.
+*/
+
 import { IterationBudget } from "../budget";
 import type { LLMProvider } from "../ai/provider";
 import { ToolRegistry } from "../registry";
@@ -6,6 +14,7 @@ import { SystemPromptBuilder } from "../prompt/builder";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 import { runAgentEngineLoop } from "./loop";
+import { ConversationState, type ConversationMetadata,} from "./conversation-state";
 
 export type AgentEngineOptions = {
   provider: LLMProvider;
@@ -19,7 +28,7 @@ export class AgentEngine {
   private readonly registry: ToolRegistry;
   private readonly promptBuilder: SystemPromptBuilder;
   private readonly maxIterations: number;
-  private readonly messages: Message[] = [];
+  private readonly conversation = new ConversationState();
   private abortController?: AbortController;
 
   constructor(options: AgentEngineOptions) {
@@ -34,7 +43,7 @@ export class AgentEngine {
 
     return runAgentEngineLoop({
       prompt,
-      messages: this.messages,
+      conversation: this.conversation,
       provider: this.provider,
       registry: this.registry,
       promptBuilder: this.promptBuilder,
@@ -49,6 +58,10 @@ export class AgentEngine {
   }
 
   getMessages(): readonly Message[] {
-    return this.messages;
+    return this.conversation.snapshot();
+  }
+  
+  getConversationMetadata(): Readonly<ConversationMetadata> {
+    return this.conversation.getMetadata();
   }
 }
