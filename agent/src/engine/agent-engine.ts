@@ -14,7 +14,10 @@ import { SystemPromptBuilder } from "../prompt/builder";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 import { runAgentEngineLoop } from "./loop";
-import { ConversationState, type ConversationMetadata,} from "./conversation-state";
+import {
+  ConversationState,
+  type ConversationMetadata,
+} from "./conversation-state";
 
 export type AgentEngineOptions = {
   provider: LLMProvider;
@@ -60,7 +63,7 @@ export class AgentEngine {
   getMessages(): readonly Message[] {
     return this.conversation.snapshot();
   }
-  
+
   getConversationMetadata(): Readonly<ConversationMetadata> {
     return this.conversation.getMetadata();
   }

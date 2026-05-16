@@ -18,13 +18,12 @@ export type RunAgentEngineLoopOptions = {
   signal?: AbortSignal;
 };
 
-
-
 export async function* runAgentEngineLoop(
   options: RunAgentEngineLoopOptions,
 ): AsyncIterable<AgentEngineEvent> {
-  const toolExecutor = options.toolExecutor ?? new ToolExecutor(options.registry);
-  
+  const toolExecutor =
+    options.toolExecutor ?? new ToolExecutor(options.registry);
+
   const userMessage: UserMessage = {
     role: "user",
     content: options.prompt,
@@ -37,7 +36,7 @@ export async function* runAgentEngineLoop(
     prompt: options.prompt,
   };
 
-  let iteration = 0; 
+  let iteration = 0;
   while (true) {
     if (options.signal?.aborted) {
       yield { type: "run_finished", stopReason: "aborted" };
@@ -112,7 +111,8 @@ export async function* runAgentEngineLoop(
     }
 
     if (!assistantMessage) {
-      const errorMessage = "Provider stream ended without a final assistant message.";
+      const errorMessage =
+        "Provider stream ended without a final assistant message.";
       const message: AssistantMessage = {
         role: "assistant",
         content: [],
@@ -124,7 +124,7 @@ export async function* runAgentEngineLoop(
 
       yield {
         type: "error",
-        message: errorMessage,  // it was message.errorMessage
+        message: errorMessage, // it was message.errorMessage
       };
 
       yield {

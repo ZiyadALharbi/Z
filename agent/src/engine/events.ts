@@ -1,8 +1,17 @@
-import type { AssistantMessage, StopReason, ToolCallBlock, ToolResultMessage } from "../types";
+import type {
+  AssistantMessage,
+  StopReason,
+  ToolCallBlock,
+  ToolResultMessage,
+} from "../types";
 
 export type AgentEngineEvent =
   | { type: "run_started"; prompt: string }
-  | { type: "iteration_started"; iteration: number; remainingIterations: number }
+  | {
+      type: "iteration_started";
+      iteration: number;
+      remainingIterations: number;
+    }
   | { type: "text"; text: string }
   | { type: "assistant_message"; message: AssistantMessage }
   | { type: "tool_started"; toolCall: ToolCallBlock }

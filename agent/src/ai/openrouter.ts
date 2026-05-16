@@ -10,10 +10,7 @@ import OpenAI from "openai";
 import type { AssistantMessage, ContentBlock, StopReason } from "../types";
 import type { LLMContext, LLMProvider } from "./provider";
 import type { StreamEvent } from "./events";
-import {
-  toOpenRouterMessages,
-  toOpenRouterTool,
-} from "./openrouter/convert";
+import { toOpenRouterMessages, toOpenRouterTool } from "./openrouter/convert";
 import { ToolCallBuffer } from "./openrouter/tool-call-buffer";
 
 export type OpenRouterProviderOptions = {

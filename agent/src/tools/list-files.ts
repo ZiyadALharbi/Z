@@ -7,7 +7,7 @@ Argument parsing and abort checks are shared through tool helpers.
 */
 
 import { readdir } from "node:fs/promises";
-import type { Tool } from "../types";
+import type { JsonObject, Tool } from "../types";
 import type { Workspace } from "../workspace/workspace";
 import { requireString, throwIfAborted } from "./args";
 
@@ -15,7 +15,19 @@ export type ListFilesToolOptions = {
   workspace: Workspace;
 };
 
-export function ListFilesTool(options: ListFilesToolOptions): Tool {
+type ListFilesArgs = JsonObject & {
+  path: string;
+};
+
+function parseListFilesArgs(args: JsonObject): ListFilesArgs {
+  return {
+    path: requireString(args, "path"),
+  };
+}
+
+export function ListFilesTool(
+  options: ListFilesToolOptions,
+): Tool<ListFilesArgs> {
   return {
     definition: {
       name: "list_files",
@@ -33,11 +45,12 @@ export function ListFilesTool(options: ListFilesToolOptions): Tool {
       },
     },
 
+    parseArgs: parseListFilesArgs,
+
     handler: async (args, signal) => {
       throwIfAborted(signal);
 
-      const targetPath = requireString(args, "path");
-      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
+      const absolutePath = await options.workspace.resolveInsideRoot(args.path);
 
       const entries = await readdir(absolutePath, { withFileTypes: true });
 

@@ -8,7 +8,7 @@ Tool helpers own argument parsing and abort checks.
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import type { Tool } from "../types";
+import type { JsonObject, Tool } from "../types";
 import type { Workspace } from "../workspace/workspace";
 import {
   optionalBoolean,
@@ -17,16 +17,38 @@ import {
   throwIfAborted,
 } from "./args";
 
+const DEFAULT_MAX_FILE_BYTES = 200_000;
+const DEFAULT_MAX_RESULTS = 100;
+
 export type GrepToolOptions = {
   workspace: Workspace;
   maxFileBytes?: number;
   defaultMaxResults?: number;
 };
 
-const DEFAULT_MAX_FILE_BYTES = 200_000;
-const DEFAULT_MAX_RESULTS = 100;
+type GrepArgs = JsonObject & {
+  path: string;
+  pattern: string;
+  regex: boolean;
+  maxResults: number;
+};
 
-export function GrepTool(options: GrepToolOptions): Tool {
+function parseGrepArgs(args: JsonObject, defaultMaxResults: number): GrepArgs {
+  const maxResults = optionalNumber(args, "maxResults") ?? defaultMaxResults;
+
+  if (maxResults < 1) {
+    throw new Error("maxResults must be at least 1");
+  }
+
+  return {
+    path: requireString(args, "path"),
+    pattern: requireString(args, "pattern"),
+    regex: optionalBoolean(args, "regex") ?? false,
+    maxResults,
+  };
+}
+
+export function GrepTool(options: GrepToolOptions): Tool<GrepArgs> {
   const maxFileBytes = options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
   const defaultMaxResults = options.defaultMaxResults ?? DEFAULT_MAX_RESULTS;
 
@@ -61,21 +83,13 @@ export function GrepTool(options: GrepToolOptions): Tool {
       },
     },
 
+    parseArgs: (args) => parseGrepArgs(args, defaultMaxResults),
+
     handler: async (args, signal) => {
       throwIfAborted(signal);
 
-      const targetPath = requireString(args, "path");
-      const pattern = requireString(args, "pattern");
-      const useRegex = optionalBoolean(args, "regex") ?? false;
-      const maxResults =
-        optionalNumber(args, "maxResults") ?? defaultMaxResults;
-
-      if (maxResults < 1) {
-        throw new Error("maxResults must be at least 1");
-      }
-
-      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
-      const matcher = createMatcher(pattern, useRegex);
+      const absolutePath = await options.workspace.resolveInsideRoot(args.path);
+      const matcher = createMatcher(args.pattern, args.regex);
       const matches: string[] = [];
 
       await searchPath({
@@ -83,16 +97,12 @@ export function GrepTool(options: GrepToolOptions): Tool {
         workspace: options.workspace,
         matcher,
         matches,
-        maxResults,
+        maxResults: args.maxResults,
         maxFileBytes,
         signal,
       });
 
-      if (matches.length === 0) {
-        return "No matches found.";
-      }
-
-      return matches.join("\n");
+      return matches.length === 0 ? "No matches found." : matches.join("\n");
     },
   };
 }

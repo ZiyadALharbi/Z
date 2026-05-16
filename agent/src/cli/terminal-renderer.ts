@@ -177,7 +177,9 @@ function renderAssistantText(text: string, stats: RunStats): void {
   while (stats.assistantLineBuffer.includes("\n")) {
     const newlineIndex = stats.assistantLineBuffer.indexOf("\n");
     const line = stats.assistantLineBuffer.slice(0, newlineIndex);
-    stats.assistantLineBuffer = stats.assistantLineBuffer.slice(newlineIndex + 1);
+    stats.assistantLineBuffer = stats.assistantLineBuffer.slice(
+      newlineIndex + 1,
+    );
     writeLine(renderMarkdownLine(line));
   }
 }
@@ -225,7 +227,9 @@ function renderMarkdownInline(text: string): string {
 }
 
 function renderStatus(label: string, message: string): void {
-  writeLine(`${ansi.gray}${spinner()} ${label}${ansi.reset} ${ansi.dim}${message}${ansi.reset}`);
+  writeLine(
+    `${ansi.gray}${spinner()} ${label}${ansi.reset} ${ansi.dim}${message}${ansi.reset}`,
+  );
 }
 
 function renderToolStart(name: string, count: number): void {
@@ -263,7 +267,9 @@ function renderPanel(title: string, body: string, color: string): void {
 
   writeLine(`${color}${top}${ansi.reset}`);
   for (const line of lines) {
-    writeLine(`${color}│${ansi.reset} ${line}${pad(innerWidth - visibleLength(line))} ${color}│${ansi.reset}`);
+    writeLine(
+      `${color}│${ansi.reset} ${line}${pad(innerWidth - visibleLength(line))} ${color}│${ansi.reset}`,
+    );
   }
   writeLine(`${color}${bottom}${ansi.reset}`);
 }

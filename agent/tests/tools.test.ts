@@ -7,6 +7,9 @@ import { BashTool } from "../src/tools/bash";
 import { GrepTool } from "../src/tools/grep";
 import { ListFilesTool } from "../src/tools/list-files";
 import { ReadFileTool } from "../src/tools/read-file";
+import { ToolRegistry } from "../src/registry";
+import { ToolExecutor } from "../src/tools/executor";
+import type { JsonObject, Tool } from "../src/types";
 
 const tempRoots: string[] = [];
 
@@ -14,6 +17,27 @@ async function createTempWorkspace(): Promise<Workspace> {
   const root = await mkdtemp(join(tmpdir(), "z-agent-tests-"));
   tempRoots.push(root);
   return new Workspace({ root });
+}
+
+async function executeTool<TArgs extends JsonObject>(
+  tool: Tool<TArgs>,
+  args: JsonObject,
+): Promise<string> {
+  const registry = new ToolRegistry();
+  registry.register(tool);
+
+  const result = await new ToolExecutor(registry).execute({
+    type: "toolCall",
+    id: "call_1",
+    name: tool.definition.name,
+    arguments: args,
+  });
+
+  if (result.isError) {
+    throw new Error(result.content);
+  }
+
+  return result.content;
 }
 
 afterEach(async () => {
@@ -51,18 +75,18 @@ describe("built-in file tools", () => {
     await mkdir(join(workspace.root, "src"));
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = ListFilesTool({ workspace });
-
-    await expect(tool.handler({ path: "." })).resolves.toBe("README.md\nsrc/");
+    await expect(
+      executeTool(ListFilesTool({ workspace }), { path: "." }),
+    ).resolves.toBe("README.md\nsrc/");
   });
 
   test("read_file reads UTF-8 text files", async () => {
     const workspace = await createTempWorkspace();
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = ReadFileTool({ workspace });
-
-    await expect(tool.handler({ path: "README.md" })).resolves.toBe("hello");
+    await expect(
+      executeTool(ReadFileTool({ workspace }), { path: "README.md" }),
+    ).resolves.toBe("hello");
   });
 
   test("read_file rejects directories and oversized files", async () => {
@@ -70,12 +94,16 @@ describe("built-in file tools", () => {
     await mkdir(join(workspace.root, "src"));
     await writeFile(join(workspace.root, "large.txt"), "abcdef");
 
-    const tool = ReadFileTool({ workspace, maxBytes: 3 });
-
-    await expect(tool.handler({ path: "src" })).rejects.toThrow(
+    await expect(
+      executeTool(ReadFileTool({ workspace, maxBytes: 3 }), { path: "src" }),
+    ).rejects.toThrow(
       "Path is a directory: src",
     );
-    await expect(tool.handler({ path: "large.txt" })).rejects.toThrow(
+    await expect(
+      executeTool(ReadFileTool({ workspace, maxBytes: 3 }), {
+        path: "large.txt",
+      }),
+    ).rejects.toThrow(
       "File is too large",
     );
   });
@@ -88,10 +116,12 @@ describe("built-in file tools", () => {
       "alpha\nneedle one\nneedle two",
     );
 
-    const tool = GrepTool({ workspace });
-
     await expect(
-      tool.handler({ path: "src", pattern: "needle", maxResults: 2 }),
+      executeTool(GrepTool({ workspace }), {
+        path: "src",
+        pattern: "needle",
+        maxResults: 2,
+      }),
     ).resolves.toBe("src/one.txt:2:needle one\nsrc/one.txt:3:needle two");
   });
 
@@ -99,20 +129,18 @@ describe("built-in file tools", () => {
     const workspace = await createTempWorkspace();
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = GrepTool({ workspace });
-
-    await expect(tool.handler({ path: ".", pattern: "missing" })).resolves.toBe(
-      "No matches found.",
-    );
+    await expect(
+      executeTool(GrepTool({ workspace }), { path: ".", pattern: "missing" }),
+    ).resolves.toBe("No matches found.");
   });
 });
 
 describe("bash tool", () => {
   test("runs safe commands in the configured cwd", async () => {
     const workspace = await createTempWorkspace();
-    const tool = BashTool({ cwd: workspace.root });
-
-    const result = await tool.handler({ command: "printf hello" });
+    const result = await executeTool(BashTool({ cwd: workspace.root }), {
+      command: "printf hello",
+    });
 
     expect(result).toContain("Command: printf hello");
     expect(result).toContain("Exit code: 0");
@@ -122,29 +150,32 @@ describe("bash tool", () => {
 
   test("rejects empty and obviously destructive commands", async () => {
     const workspace = await createTempWorkspace();
-    const tool = BashTool({ cwd: workspace.root });
-
-    await expect(tool.handler({ command: "   " })).rejects.toThrow(
+    await expect(
+      executeTool(BashTool({ cwd: workspace.root }), { command: "   " }),
+    ).rejects.toThrow(
       "Command cannot be empty",
     );
-    await expect(tool.handler({ command: "sudo ls" })).rejects.toThrow(
+    await expect(
+      executeTool(BashTool({ cwd: workspace.root }), { command: "sudo ls" }),
+    ).rejects.toThrow(
       "Blocked potentially destructive command",
     );
   });
 
   test("caps requested timeout and output length", async () => {
     const workspace = await createTempWorkspace();
-    const tool = BashTool({
-      cwd: workspace.root,
-      maxTimeoutMs: 10,
-      defaultTimeoutMs: 10,
-      maxOutputLength: 40,
-    });
-
-    const result = await tool.handler({
-      command: "printf abcdefghijklmnopqrstuvwxyz",
-      timeoutMs: 1_000,
-    });
+    const result = await executeTool(
+      BashTool({
+        cwd: workspace.root,
+        maxTimeoutMs: 10,
+        defaultTimeoutMs: 10,
+        maxOutputLength: 40,
+      }),
+      {
+        command: "printf abcdefghijklmnopqrstuvwxyz",
+        timeoutMs: 1_000,
+      },
+    );
 
     expect(result).toContain("[Command output truncated]");
   });

@@ -1,5 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
-import type { Tool } from "../types";
+import type { JsonObject, Tool } from "../types";
 import type { Workspace } from "../workspace/workspace";
 import { requireString, throwIfAborted } from "./args";
 
@@ -10,7 +10,17 @@ export type ReadFileToolOptions = {
 
 const DEFAULT_MAX_BYTES = 200_000;
 
-export function ReadFileTool(options: ReadFileToolOptions): Tool {
+type ReadFileArgs = JsonObject & {
+  path: string;
+};
+
+function parseReadFileArgs(args: JsonObject): ReadFileArgs {
+  return {
+    path: requireString(args, "path"),
+  };
+}
+
+export function ReadFileTool(options: ReadFileToolOptions): Tool<ReadFileArgs> {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 
   return {
@@ -30,16 +40,17 @@ export function ReadFileTool(options: ReadFileToolOptions): Tool {
       },
     },
 
+    parseArgs: parseReadFileArgs,
+
     handler: async (args, signal) => {
       throwIfAborted(signal);
 
-      const targetPath = requireString(args, "path");
-      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
+      const absolutePath = await options.workspace.resolveInsideRoot(args.path);
 
       const fileStat = await stat(absolutePath);
 
       if (fileStat.isDirectory()) {
-        throw new Error(`Path is a directory: ${targetPath}`);
+        throw new Error(`Path is a directory: ${args.path}`);
       }
 
       if (fileStat.size > maxBytes) {

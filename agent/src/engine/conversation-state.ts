@@ -1,4 +1,3 @@
-
 /*
 Conversation State
 
@@ -55,7 +54,3 @@ export class ConversationState {
     return this.metadata;
   }
 }
-
-
-
-

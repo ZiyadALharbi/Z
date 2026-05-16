@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { ToolRegistry } from "../src/registry";
 import { ToolExecutor } from "../src/tools/executor";
 import type { Tool, ToolCallBlock } from "../src/types";
+import { requireString } from "../src/tools/args";
 
 function toolCall(
   overrides: Partial<ToolCallBlock> = {},
@@ -119,4 +120,37 @@ describe("ToolExecutor", () => {
 
     expect(receivedSignal).toBe(controller.signal);
   });
+});
+
+test("validates tool arguments before calling handlers", async () => {
+  const registry = new ToolRegistry();
+  let handlerCalled = false;
+
+  registry.register({
+    definition: {
+      name: "needs_path",
+      description: "Needs a path",
+      parameters: {
+        type: "object",
+        properties: { path: { type: "string" } },
+        required: ["path"],
+      },
+    },
+    parseArgs: (args) => ({ path: requireString(args, "path") }),
+    handler: async () => {
+      handlerCalled = true;
+      return "ok";
+    },
+  });
+
+  const result = await new ToolExecutor(registry).execute({
+    type: "toolCall",
+    id: "call_1",
+    name: "needs_path",
+    arguments: { path: 123 },
+  });
+
+  expect(result.isError).toBe(true);
+  expect(result.content).toContain(`Expected "path" to be a string`);
+  expect(handlerCalled).toBe(false);
 });

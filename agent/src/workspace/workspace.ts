@@ -1,9 +1,8 @@
-
-/*
-Workspace path safety:
-- First resolve the input lexically to block simple escapes like "../secret.txt".
-- Then resolve the real filesystem paths to catch symlinks inside the workspace that point outside of it.
-- Return the real target path so file tools operate on the verified location.
+/**
+ * Workspace path safety:
+ * - First resolve the input lexically to block simple escapes like "../secret.txt".
+ * - Then resolve the real filesystem paths to catch symlinks inside the workspace that point outside of it.
+ * - Return the real target path so file tools operate on the verified location.
 */
 
 import { realpath } from "node:fs/promises";
