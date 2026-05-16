@@ -35,7 +35,7 @@ export class AgentEngine {
     this.provider = options.provider;
     this.registry = options.registry;
     this.promptBuilder = options.promptBuilder ?? new SystemPromptBuilder();
-    this.maxIterations = options.maxIterations ?? 8;
+    this.maxIterations = options.maxIterations ?? 20; //temp number
   }
 
   run(prompt: string): AsyncIterable<AgentEngineEvent> {

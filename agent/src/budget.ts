@@ -17,5 +17,4 @@ export class IterationBudget {
     getRemaining(): number {
         return this.remaining;
     }
-
 }

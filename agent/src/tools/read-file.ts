@@ -10,7 +10,7 @@ export type ReadFileToolOptions = {
 
 const DEFAULT_MAX_BYTES = 200_000;
 
-export function createReadFileTool(options: ReadFileToolOptions): Tool {
+export function ReadFileTool(options: ReadFileToolOptions): Tool {
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
 
   return {

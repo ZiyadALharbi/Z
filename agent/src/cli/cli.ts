@@ -13,7 +13,7 @@ import { createCliEngine } from "./create-engine";
 import { TerminalRenderer } from "./terminal-renderer";
 
 const model = "moonshotai/kimi-k2.6";
-const maxIterations = 8;
+const maxIterations = 20;
 const cwd = process.cwd();
 
 const { engine } = createCliEngine({

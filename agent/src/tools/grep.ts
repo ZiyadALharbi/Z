@@ -26,7 +26,7 @@ export type GrepToolOptions = {
 const DEFAULT_MAX_FILE_BYTES = 200_000;
 const DEFAULT_MAX_RESULTS = 100;
 
-export function createGrepTool(options: GrepToolOptions): Tool {
+export function GrepTool(options: GrepToolOptions): Tool {
   const maxFileBytes = options.maxFileBytes ?? DEFAULT_MAX_FILE_BYTES;
   const defaultMaxResults = options.defaultMaxResults ?? DEFAULT_MAX_RESULTS;
 
@@ -67,7 +67,8 @@ export function createGrepTool(options: GrepToolOptions): Tool {
       const targetPath = requireString(args, "path");
       const pattern = requireString(args, "pattern");
       const useRegex = optionalBoolean(args, "regex") ?? false;
-      const maxResults = optionalNumber(args, "maxResults") ?? defaultMaxResults;
+      const maxResults =
+        optionalNumber(args, "maxResults") ?? defaultMaxResults;
 
       if (maxResults < 1) {
         throw new Error("maxResults must be at least 1");
@@ -116,7 +117,9 @@ async function searchPath(options: SearchPathOptions): Promise<void> {
   const fileStat = await stat(options.absolutePath);
 
   if (fileStat.isDirectory()) {
-    const entries = await readdir(options.absolutePath, { withFileTypes: true });
+    const entries = await readdir(options.absolutePath, {
+      withFileTypes: true,
+    });
 
     for (const entry of entries) {
       if (options.matches.length >= options.maxResults) {

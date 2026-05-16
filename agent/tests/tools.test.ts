@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Workspace } from "../src/workspace/workspace";
 import { createBashTool } from "../src/tools/bash";
-import { createGrepTool } from "../src/tools/grep";
-import { createListFilesTool } from "../src/tools/list-files";
-import { createReadFileTool } from "../src/tools/read-file";
+import { GrepTool } from "../src/tools/grep";
+import { ListFilesTool } from "../src/tools/list-files";
+import { ReadFileTool } from "../src/tools/read-file";
 
 const tempRoots: string[] = [];
 
@@ -51,7 +51,7 @@ describe("built-in file tools", () => {
     await mkdir(join(workspace.root, "src"));
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = createListFilesTool({ workspace });
+    const tool = ListFilesTool({ workspace });
 
     await expect(tool.handler({ path: "." })).resolves.toBe(
       "README.md\nsrc/",
@@ -62,7 +62,7 @@ describe("built-in file tools", () => {
     const workspace = await createTempWorkspace();
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = createReadFileTool({ workspace });
+    const tool = ReadFileTool({ workspace });
 
     await expect(tool.handler({ path: "README.md" })).resolves.toBe("hello");
   });
@@ -72,7 +72,7 @@ describe("built-in file tools", () => {
     await mkdir(join(workspace.root, "src"));
     await writeFile(join(workspace.root, "large.txt"), "abcdef");
 
-    const tool = createReadFileTool({ workspace, maxBytes: 3 });
+    const tool = ReadFileTool({ workspace, maxBytes: 3 });
 
     await expect(tool.handler({ path: "src" })).rejects.toThrow(
       "Path is a directory: src",
@@ -90,7 +90,7 @@ describe("built-in file tools", () => {
       "alpha\nneedle one\nneedle two",
     );
 
-    const tool = createGrepTool({ workspace });
+    const tool = GrepTool({ workspace });
 
     await expect(
       tool.handler({ path: "src", pattern: "needle", maxResults: 2 }),
@@ -101,7 +101,7 @@ describe("built-in file tools", () => {
     const workspace = await createTempWorkspace();
     await writeFile(join(workspace.root, "README.md"), "hello");
 
-    const tool = createGrepTool({ workspace });
+    const tool = GrepTool({ workspace });
 
     await expect(
       tool.handler({ path: ".", pattern: "missing" }),

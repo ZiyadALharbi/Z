@@ -9,9 +9,9 @@ import { OpenRouterProvider } from "../ai/openrouter";
 import { AgentEngine } from "../engine/agent-engine";
 import { ToolRegistry } from "../registry";
 import { createBashTool } from "../tools/bash";
-import { createGrepTool } from "../tools/grep";
-import { createListFilesTool } from "../tools/list-files";
-import { createReadFileTool } from "../tools/read-file";
+import { GrepTool } from "../tools/grep";
+import { ListFilesTool } from "../tools/list-files";
+import { ReadFileTool } from "../tools/read-file";
 import { Workspace } from "../workspace/workspace";
 
 export type CliEngineConfig = {
@@ -29,9 +29,9 @@ export function createCliEngine(config: CliEngineConfig): CliEngineRuntime {
   const workspace = new Workspace({ root: config.cwd });
   const registry = new ToolRegistry();
 
-  registry.register(createListFilesTool({ workspace }));
-  registry.register(createReadFileTool({ workspace }));
-  registry.register(createGrepTool({ workspace }));
+  registry.register(ListFilesTool({ workspace }));
+  registry.register(ReadFileTool({ workspace }));
+  registry.register(GrepTool({ workspace }));
 
   // Bash is still command execution specific, but shares the workspace root.
   registry.register(createBashTool({ cwd: workspace.root }));

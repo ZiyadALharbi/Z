@@ -19,12 +19,12 @@ export type RunAgentEngineLoopOptions = {
 };
 
 
+
 export async function* runAgentEngineLoop(
   options: RunAgentEngineLoopOptions,
 ): AsyncIterable<AgentEngineEvent> {
   const toolExecutor = options.toolExecutor ?? new ToolExecutor(options.registry);
   
-
   const userMessage: UserMessage = {
     role: "user",
     content: options.prompt,
@@ -37,8 +37,7 @@ export async function* runAgentEngineLoop(
     prompt: options.prompt,
   };
 
-  let iteration = 0;
-
+  let iteration = 0; 
   while (true) {
     if (options.signal?.aborted) {
       yield { type: "run_finished", stopReason: "aborted" };

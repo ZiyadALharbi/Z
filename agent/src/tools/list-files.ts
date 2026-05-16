@@ -15,7 +15,7 @@ export type ListFilesToolOptions = {
   workspace: Workspace;
 };
 
-export function createListFilesTool(options: ListFilesToolOptions): Tool {
+export function ListFilesTool(options: ListFilesToolOptions): Tool {
   return {
     definition: {
       name: "list_files",
