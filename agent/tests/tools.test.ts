@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Workspace } from "../src/workspace/workspace";
-import { createBashTool } from "../src/tools/bash";
+import { BashTool } from "../src/tools/bash";
 import { GrepTool } from "../src/tools/grep";
 import { ListFilesTool } from "../src/tools/list-files";
 import { ReadFileTool } from "../src/tools/read-file";
@@ -31,7 +31,7 @@ describe("Workspace", () => {
   test("resolves paths inside the root", async () => {
     const workspace = await createTempWorkspace();
 
-    expect(workspace.resolveInsideRoot("src/index.ts")).toBe(
+    expect(await workspace.resolveInsideRoot("src/index.ts")).toBe(
       join(workspace.root, "src/index.ts"),
     );
   });
@@ -39,7 +39,7 @@ describe("Workspace", () => {
   test("rejects paths that escape the root", async () => {
     const workspace = await createTempWorkspace();
 
-    expect(() => workspace.resolveInsideRoot("../outside.txt")).toThrow(
+    await expect(() => workspace.resolveInsideRoot("../outside.txt")).toThrow(
       "Path escapes workspace",
     );
   });
@@ -53,9 +53,7 @@ describe("built-in file tools", () => {
 
     const tool = ListFilesTool({ workspace });
 
-    await expect(tool.handler({ path: "." })).resolves.toBe(
-      "README.md\nsrc/",
-    );
+    await expect(tool.handler({ path: "." })).resolves.toBe("README.md\nsrc/");
   });
 
   test("read_file reads UTF-8 text files", async () => {
@@ -103,16 +101,16 @@ describe("built-in file tools", () => {
 
     const tool = GrepTool({ workspace });
 
-    await expect(
-      tool.handler({ path: ".", pattern: "missing" }),
-    ).resolves.toBe("No matches found.");
+    await expect(tool.handler({ path: ".", pattern: "missing" })).resolves.toBe(
+      "No matches found.",
+    );
   });
 });
 
 describe("bash tool", () => {
   test("runs safe commands in the configured cwd", async () => {
     const workspace = await createTempWorkspace();
-    const tool = createBashTool({ cwd: workspace.root });
+    const tool = BashTool({ cwd: workspace.root });
 
     const result = await tool.handler({ command: "printf hello" });
 
@@ -124,7 +122,7 @@ describe("bash tool", () => {
 
   test("rejects empty and obviously destructive commands", async () => {
     const workspace = await createTempWorkspace();
-    const tool = createBashTool({ cwd: workspace.root });
+    const tool = BashTool({ cwd: workspace.root });
 
     await expect(tool.handler({ command: "   " })).rejects.toThrow(
       "Command cannot be empty",
@@ -136,7 +134,7 @@ describe("bash tool", () => {
 
   test("caps requested timeout and output length", async () => {
     const workspace = await createTempWorkspace();
-    const tool = createBashTool({
+    const tool = BashTool({
       cwd: workspace.root,
       maxTimeoutMs: 10,
       defaultTimeoutMs: 10,

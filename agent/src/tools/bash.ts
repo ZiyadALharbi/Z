@@ -1,32 +1,11 @@
-/*
-
-Tool Contract
-Name:
-
-bash
-Arguments:
-
-{
-  command: string;
-  timeoutMs?: number;
-}
-Behavior:
-
-Runs in configured cwd.
-Uses a timeout.
-Captures stdout, stderr, and exit code.
-Supports AbortSignal.
-Caps output size.
-Rejects obviously destructive commands.
-Returns a readable text result.
-
-*/
-
 import { spawn } from "node:child_process";
 import type { JsonObject, Tool } from "../types";
 
+// export type BashToolMode = "read_only" | "unrestricted";
+
 export type BashToolOptions = {
   cwd: string;
+  // mode?: BashToolMode;
   maxTimeoutMs?: number;
   defaultTimeoutMs?: number;
   maxOutputLength?: number;
@@ -37,7 +16,8 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_OUTPUT_LENGTH = 30_000;
 
-export function createBashTool(options: BashToolOptions): Tool {
+export function BashTool(options: BashToolOptions): Tool {
+  // const mode = options.mode ?? "read_only";
   const maxTimeoutMs = options.maxTimeoutMs ?? MAX_TIMEOUT_MS;
   const defaultTimeoutMs = options.defaultTimeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxOutputLength = options.maxOutputLength ?? DEFAULT_MAX_OUTPUT_LENGTH;

@@ -34,7 +34,7 @@ export function ReadFileTool(options: ReadFileToolOptions): Tool {
       throwIfAborted(signal);
 
       const targetPath = requireString(args, "path");
-      const absolutePath = options.workspace.resolveInsideRoot(targetPath);
+      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
 
       const fileStat = await stat(absolutePath);
 

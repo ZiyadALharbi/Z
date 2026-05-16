@@ -74,7 +74,7 @@ export function GrepTool(options: GrepToolOptions): Tool {
         throw new Error("maxResults must be at least 1");
       }
 
-      const absolutePath = options.workspace.resolveInsideRoot(targetPath);
+      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
       const matcher = createMatcher(pattern, useRegex);
       const matches: string[] = [];
 

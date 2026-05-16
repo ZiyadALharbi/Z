@@ -8,7 +8,7 @@ workspace, and tool wiring out of the interactive prompt loop.
 import { OpenRouterProvider } from "../ai/openrouter";
 import { AgentEngine } from "../engine/agent-engine";
 import { ToolRegistry } from "../registry";
-import { createBashTool } from "../tools/bash";
+import { BashTool } from "../tools/bash";
 import { GrepTool } from "../tools/grep";
 import { ListFilesTool } from "../tools/list-files";
 import { ReadFileTool } from "../tools/read-file";
@@ -34,7 +34,7 @@ export function createCliEngine(config: CliEngineConfig): CliEngineRuntime {
   registry.register(GrepTool({ workspace }));
 
   // Bash is still command execution specific, but shares the workspace root.
-  registry.register(createBashTool({ cwd: workspace.root }));
+  registry.register(BashTool({ cwd: workspace.root }));
 
   const provider = new OpenRouterProvider({ model: config.model });
   const engine = new AgentEngine({

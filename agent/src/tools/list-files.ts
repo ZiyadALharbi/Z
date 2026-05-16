@@ -37,7 +37,7 @@ export function ListFilesTool(options: ListFilesToolOptions): Tool {
       throwIfAborted(signal);
 
       const targetPath = requireString(args, "path");
-      const absolutePath = options.workspace.resolveInsideRoot(targetPath);
+      const absolutePath = await options.workspace.resolveInsideRoot(targetPath);
 
       const entries = await readdir(absolutePath, { withFileTypes: true });
 
