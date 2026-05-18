@@ -1,6 +1,6 @@
 # Z
 
-Z is a small TypeScript coding-agent runtime built on Bun. It provides an
+Z is a small TypeScript agent runtime built on Bun. It provides an
 interactive terminal agent that streams model output, executes tool calls, keeps
 conversation state, and talks to OpenRouter through the OpenAI-compatible chat
 completions API.
