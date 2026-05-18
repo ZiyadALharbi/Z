@@ -13,7 +13,7 @@ import type { Message } from "../types";
 import { SystemPromptBuilder } from "../prompt/builder";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
-import { runAgentEngineLoop } from "./loop";
+import { runAgentLoop } from "./loop";
 import {
   ConversationState,
   type ConversationMetadata,
@@ -44,7 +44,7 @@ export class AgentEngine {
   run(prompt: string): AsyncIterable<AgentEngineEvent> {
     this.abortController = new AbortController();
 
-    return runAgentEngineLoop({
+    return runAgentLoop({
       prompt,
       conversation: this.conversation,
       provider: this.provider,

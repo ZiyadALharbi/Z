@@ -3,7 +3,7 @@ import { IterationBudget } from "../src/budget";
 import type { StreamEvent } from "../src/ai/events";
 import type { LLMContext, LLMProvider } from "../src/ai/provider";
 import { ConversationState } from "../src/engine/conversation-state";
-import { runAgentEngineLoop } from "../src/engine/loop";
+import { runAgentLoop } from "../src/engine/loop";
 import { SystemPromptBuilder } from "../src/prompt/builder";
 import { ToolRegistry } from "../src/registry";
 import { ToolExecutor } from "../src/tools/executor";
@@ -117,7 +117,7 @@ describe("runAgentEngineLoop", () => {
     const conversation = new ConversationState();
 
     const events = await collect(
-      runAgentEngineLoop(createLoopOptions({ provider, conversation })),
+      runAgentLoop(createLoopOptions({ provider, conversation })),
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -169,7 +169,7 @@ describe("runAgentEngineLoop", () => {
     const conversation = new ConversationState();
 
     const events = await collect(
-      runAgentEngineLoop(
+      runAgentLoop(
         createLoopOptions({
           provider,
           registry,
@@ -220,7 +220,7 @@ describe("runAgentEngineLoop", () => {
     ]);
 
     const events = await collect(
-      runAgentEngineLoop(createLoopOptions({ provider })),
+      runAgentLoop(createLoopOptions({ provider })),
     );
 
     expect(events.map((event) => event.type)).toEqual([
@@ -240,7 +240,7 @@ describe("runAgentEngineLoop", () => {
     const provider = new ScriptedProvider([[{ type: "text_delta", text: "hi" }]]);
 
     const events = await collect(
-      runAgentEngineLoop(createLoopOptions({ provider })),
+      runAgentLoop(createLoopOptions({ provider })),
     );
 
     expect(events.at(-2)).toEqual({
@@ -279,7 +279,7 @@ describe("runAgentEngineLoop", () => {
     ]);
 
     const events = await collect(
-      runAgentEngineLoop(
+      runAgentLoop(
         createLoopOptions({
           provider,
           budget: new IterationBudget(1),
@@ -298,7 +298,7 @@ describe("runAgentEngineLoop", () => {
     controller.abort();
 
     const events = await collect(
-      runAgentEngineLoop(
+      runAgentLoop(
         createLoopOptions({
           provider: new NeverCalledProvider(),
           signal: controller.signal,

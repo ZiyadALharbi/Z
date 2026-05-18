@@ -7,7 +7,7 @@ import { SystemPromptBuilder } from "../prompt/builder";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 
-export type RunAgentEngineLoopOptions = {
+export type RunAgentLoopOptions = {
   prompt: string;
   conversation: ConversationState;
   provider: LLMProvider;
@@ -18,8 +18,8 @@ export type RunAgentEngineLoopOptions = {
   signal?: AbortSignal;
 };
 
-export async function* runAgentEngineLoop(
-  options: RunAgentEngineLoopOptions,
+export async function* runAgentLoop(
+  options: RunAgentLoopOptions,
 ): AsyncIterable<AgentEngineEvent> {
   const toolExecutor =
     options.toolExecutor ?? new ToolExecutor(options.registry);
