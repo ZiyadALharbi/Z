@@ -20,9 +20,15 @@ import type {
   TurnStatus,
 } from "../harness/types";
 
+import {
+  DefaultContextBuilder,
+  type ContextBuilder,
+} from "../harness/context-builder";
+
 export interface ConversationStateOptions {
   id?: SessionId;
   initialEntries?: ConversationEntry[];
+  contextBuilder?: ContextBuilder;
   createdAt?: Date;
 }
 
@@ -37,6 +43,8 @@ export class ConversationState {
   private readonly turns: TurnMetadata[];
   private readonly metadata: SessionMetadata;
   private nextSequence: number;
+
+  private readonly contextBuilder: ContextBuilder;
 
   constructor(options: ConversationStateOptions = {}) {
     const initialEntries = [...(options.initialEntries ?? [])];
@@ -70,6 +78,8 @@ export class ConversationState {
       createdAt,
       updatedAt: this.entries.at(-1)?.createdAt ?? createdAt,
     };
+
+    this.contextBuilder = options.contextBuilder ?? new DefaultContextBuilder();
   }
 
   startTurn(runId: RunId): TurnMetadata {
@@ -145,7 +155,7 @@ export class ConversationState {
   }
 
   getProviderMessages(): Message[] {
-    return this.entries.map((entry) => entry.message);
+    return this.contextBuilder.buildProviderMessages(this.entries);
   }
 
   getEntries(): readonly ConversationEntry[] {
