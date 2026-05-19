@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
 import { ConversationState } from "../src/engine/conversation-state";
 import type { AssistantMessage, Message, ToolResultMessage } from "../src/types";
 
@@ -10,11 +10,20 @@ function assistantMessage(text: string): AssistantMessage {
   };
 }
 
+function startTurn(conversation: ConversationState): {
+  runId: string;
+  turnId: string;
+} {
+  const runId = "run_1";
+  const turn = conversation.startTurn(runId);
+
+  return { runId, turnId: turn.id };
+}
+
 describe("ConversationState", () => {
   test("returns copy-safe message snapshots", () => {
     const conversation = new ConversationState();
-    const runId = "run_1";
-    const turnId = "turn_1";
+    const { runId, turnId } = startTurn(conversation);
 
     conversation.append({ role: "user", content: "hello" }, { runId, turnId });
 
@@ -26,8 +35,7 @@ describe("ConversationState", () => {
 
   test("derives provider messages from history entries in sequence order", () => {
     const conversation = new ConversationState();
-    const runId = "run_1";
-    const turnId = "turn_1";
+    const { runId, turnId } = startTurn(conversation);
 
     conversation.append({ role: "user", content: "hello" }, { runId, turnId });
     conversation.append(assistantMessage("hi"), { runId, turnId });
@@ -40,8 +48,7 @@ describe("ConversationState", () => {
 
   test("assigns stable entry identity and sequence", () => {
     const conversation = new ConversationState({ id: "session_1" });
-    const runId = "run_1";
-    const turnId = "turn_1";
+    const { runId, turnId } = startTurn(conversation);
 
     const firstEntry = conversation.append(
       { role: "user", content: "hello" },
@@ -63,8 +70,7 @@ describe("ConversationState", () => {
 
   test("returns copy-safe history entries", () => {
     const conversation = new ConversationState();
-    const runId = "run_1";
-    const turnId = "turn_1";
+    const { runId, turnId } = startTurn(conversation);
 
     conversation.append({ role: "user", content: "hello" }, { runId, turnId });
 
@@ -82,8 +88,7 @@ describe("ConversationState", () => {
 
   test("records tool result parent entry", () => {
     const conversation = new ConversationState();
-    const runId = "run_1";
-    const turnId = "turn_1";
+    const { runId, turnId } = startTurn(conversation);
 
     conversation.append({ role: "user", content: "use tool" }, { runId, turnId });
 
@@ -131,5 +136,62 @@ describe("ConversationState", () => {
       id: "session_1",
       status: "active",
     });
+  });
+
+  test("records turn lifecycle in the session snapshot", () => {
+    const conversation = new ConversationState({ id: "session_1" });
+    const runId = "run_1";
+    const turn = conversation.startTurn(runId);
+
+    conversation.append({ role: "user", content: "hello" }, {
+      runId,
+      turnId: turn.id,
+    });
+
+    const finishedTurn = conversation.completeTurn(turn.id);
+    const snapshot = conversation.getSessionSnapshot();
+
+    expect(finishedTurn.status).toBe("completed");
+    expect(finishedTurn.finishedAt).toBeInstanceOf(Date);
+    expect(snapshot.turns).toEqual([finishedTurn]);
+    expect(snapshot.entries[0]?.turnId).toBe(turn.id);
+  });
+
+  test("rejects appending to a missing turn", () => {
+    const conversation = new ConversationState();
+
+    expect(() =>
+      conversation.append(
+        { role: "user", content: "hello" },
+        { runId: "run_1", turnId: "missing_turn" },
+      ),
+    ).toThrow("Turn does not exist: missing_turn");
+  });
+
+  test("rejects appending to a finished turn", () => {
+    const conversation = new ConversationState();
+    const runId = "run_1";
+    const turn = conversation.startTurn(runId);
+
+    conversation.completeTurn(turn.id);
+
+    expect(() =>
+      conversation.append(
+        { role: "user", content: "hello" },
+        { runId, turnId: turn.id },
+      ),
+    ).toThrow(`Cannot append to finished turn: ${turn.id}`);
+  });
+
+  test("rejects entries whose runId does not match the turn", () => {
+    const conversation = new ConversationState();
+    const turn = conversation.startTurn("run_1");
+
+    expect(() =>
+      conversation.append(
+        { role: "user", content: "hello" },
+        { runId: "run_2", turnId: turn.id },
+      ),
+    ).toThrow("Conversation entry runId must match its turn runId.");
   });
 });

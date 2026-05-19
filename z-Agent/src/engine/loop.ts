@@ -26,30 +26,77 @@ export async function* runAgentLoop(
 
   const runId = crypto.randomUUID();
   const turn = options.conversation.startTurn(runId);
+  const scope = {
+    sessionId: turn.sessionId,
+    runId,
+    turnId: turn.id,
+  };
 
   const userMessage: UserMessage = {
     role: "user",
     content: options.prompt,
   };
 
-  options.conversation.append(userMessage, { runId, turnId: turn.id });
+  const userEntry = options.conversation.append(userMessage, {
+    runId,
+    turnId: turn.id,
+  });
 
   yield {
     type: "run_started",
     prompt: options.prompt,
+    ...scope,
+  };
+
+  yield {
+    type: "turn_started",
+    turn,
+    ...scope,
+  };
+
+  yield {
+    type: "message_appended",
+    entry: userEntry,
+    ...scope,
   };
 
   let iteration = 0;
   while (true) {
     if (options.signal?.aborted) {
-      options.conversation.abortTurn(turn.id);
-      yield { type: "run_finished", stopReason: "aborted" };
+      const finishedTurn = options.conversation.abortTurn(turn.id);
+
+      yield {
+        type: "turn_finished",
+        turn: finishedTurn,
+        stopReason: "aborted",
+        ...scope,
+      };
+
+      yield {
+        type: "run_finished",
+        stopReason: "aborted",
+        ...scope,
+      };
+
       return;
     }
 
     if (!options.budget.consume()) {
-      options.conversation.completeTurn(turn.id);
-      yield { type: "run_finished", stopReason: "budget_exhausted" };
+      const finishedTurn = options.conversation.completeTurn(turn.id);
+
+      yield {
+        type: "turn_finished",
+        turn: finishedTurn,
+        stopReason: "budget_exhausted",
+        ...scope,
+      };
+
+      yield {
+        type: "run_finished",
+        stopReason: "budget_exhausted",
+        ...scope,
+      };
+
       return;
     }
 
@@ -59,6 +106,7 @@ export async function* runAgentLoop(
       type: "iteration_started",
       iteration,
       remainingIterations: options.budget.getRemaining(),
+      ...scope,
     };
 
     const systemPrompt = options.promptBuilder.build(
@@ -79,6 +127,7 @@ export async function* runAgentLoop(
         yield {
           type: "text",
           text: event.text,
+          ...scope,
         };
       }
 
@@ -90,23 +139,43 @@ export async function* runAgentLoop(
           errorMessage: event.message,
         };
 
-        options.conversation.append(message, { runId, turnId: turn.id });
+        const errorEntry = options.conversation.append(message, {
+          runId,
+          turnId: turn.id,
+        });
 
         yield {
           type: "error",
           message: event.message,
+          ...scope,
+        };
+
+        yield {
+          type: "message_appended",
+          entry: errorEntry,
+          ...scope,
         };
 
         yield {
           type: "assistant_message",
           message,
+          entryId: errorEntry.id,
+          ...scope,
         };
 
-        options.conversation.failTurn(turn.id);
+        const finishedTurn = options.conversation.failTurn(turn.id);
+
+        yield {
+          type: "turn_finished",
+          turn: finishedTurn,
+          stopReason: "error",
+          ...scope,
+        };
 
         yield {
           type: "run_finished",
           stopReason: "error",
+          ...scope,
         };
 
         return;
@@ -127,23 +196,43 @@ export async function* runAgentLoop(
         errorMessage,
       };
 
-      options.conversation.append(message, { runId, turnId: turn.id });
+      const errorEntry = options.conversation.append(message, {
+        runId,
+        turnId: turn.id,
+      });
 
       yield {
         type: "error",
-        message: errorMessage, // it was message.errorMessage
+        message: errorMessage,
+        ...scope,
+      };
+
+      yield {
+        type: "message_appended",
+        entry: errorEntry,
+        ...scope,
       };
 
       yield {
         type: "assistant_message",
         message,
+        entryId: errorEntry.id,
+        ...scope,
       };
 
-      options.conversation.failTurn(turn.id);
+      const finishedTurn = options.conversation.failTurn(turn.id);
+
+      yield {
+        type: "turn_finished",
+        turn: finishedTurn,
+        stopReason: "error",
+        ...scope,
+      };
 
       yield {
         type: "run_finished",
         stopReason: "error",
+        ...scope,
       };
 
       return;
@@ -155,17 +244,34 @@ export async function* runAgentLoop(
     });
 
     yield {
+      type: "message_appended",
+      entry: assistantEntry,
+      ...scope,
+    };
+
+    yield {
       type: "assistant_message",
       message: assistantMessage,
+      entryId: assistantEntry.id,
+      ...scope,
     };
 
     const toolCalls = getToolCalls(assistantMessage);
 
     if (toolCalls.length === 0) {
-      options.conversation.completeTurn(turn.id);
+      const finishedTurn = options.conversation.completeTurn(turn.id);
+
+      yield {
+        type: "turn_finished",
+        turn: finishedTurn,
+        stopReason: assistantMessage.stopReason,
+        ...scope,
+      };
+
       yield {
         type: "run_finished",
         stopReason: assistantMessage.stopReason,
+        ...scope,
       };
 
       return;
@@ -173,27 +279,51 @@ export async function* runAgentLoop(
 
     for (const toolCall of toolCalls) {
       if (options.signal?.aborted) {
-        options.conversation.abortTurn(turn.id);
-        yield { type: "run_finished", stopReason: "aborted" };
+        const finishedTurn = options.conversation.abortTurn(turn.id);
+
+        yield {
+          type: "turn_finished",
+          turn: finishedTurn,
+          stopReason: "aborted",
+          ...scope,
+        };
+
+        yield {
+          type: "run_finished",
+          stopReason: "aborted",
+          ...scope,
+        };
+
         return;
       }
 
       yield {
         type: "tool_started",
         toolCall,
+        parentEntryId: assistantEntry.id,
+        ...scope,
       };
 
       const result = await toolExecutor.execute(toolCall, options.signal);
 
-      options.conversation.append(result, {
+      const toolResultEntry = options.conversation.append(result, {
         runId,
         turnId: turn.id,
         parentEntryId: assistantEntry.id,
       });
 
       yield {
+        type: "message_appended",
+        entry: toolResultEntry,
+        ...scope,
+      };
+
+      yield {
         type: "tool_finished",
         result,
+        entryId: toolResultEntry.id,
+        parentEntryId: assistantEntry.id,
+        ...scope,
       };
     }
   }
