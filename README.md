@@ -1,9 +1,9 @@
 # Z
 
-Z is a small TypeScript agent runtime built on Bun. It provides an
+Z is a TypeScript agent built on Bun. It provides an
 interactive terminal agent that streams model output, executes tool calls, keeps
-conversation state, and talks to OpenRouter through the OpenAI-compatible chat
-completions API.
+session-backed history, and talks to OpenRouter through the OpenAI-compatible
+chat completions API.
 
 The current CLI is wired to `moonshotai/kimi-k2.6` and exposes four local tools:
 
@@ -13,8 +13,11 @@ The current CLI is wired to `moonshotai/kimi-k2.6` and exposes four local tools:
 - `bash` runs shell commands in the project directory with basic guardrails,
   timeouts, abort handling, and output truncation.
 
-### Note:
+### Note
+
 - **The project is currently in pre-alpha and will change significantly**.
+- Z is a general-purpose agent framework. It can be used for coding workflows,
+  but coding-specific behavior is not the core product goal.
 
 ## Requirements
 
@@ -40,7 +43,7 @@ export OPENROUTER_API_KEY="..."
 Start the interactive shell from the project root:
 
 ```sh
-bun agent/src/cli/cli.ts
+bun z-tui/src/cli.ts
 ```
 
 Inside the shell:
@@ -50,45 +53,76 @@ Inside the shell:
 - `/exit` or `/quit` closes the session.
 - `Ctrl-C` aborts an active agent run. Press it again while idle to exit.
 
-The package also declares a `z-agent` binary at `agent/src/cli/cli.ts` for local
+The package also declares a `z-agent` binary at `z-tui/src/cli.ts` for local
 bin-based usage.
 
 ## Project Structure
 
 ```text
-agent/src/
-  ai/             Provider interface, OpenRouter adapter, stream conversion.
-  cli/            Interactive terminal harness and renderer.
-  engine/         Agent loop, conversation state, events, cancellation.
-  prompt/         System prompt builder.
+z-Agent/src/
+  engine/         Agent loop, stateful engine wrapper, events, conversation state.
+  harness/        System prompt, session/history types, context builder, stores.
   tools/          Built-in tool definitions and execution.
   workspace/      Workspace path safety and skip rules.
   budget.ts       Iteration budget.
+  create-engine.ts CLI runtime wiring.
   registry.ts     Tool registry.
   types.ts        Shared message, tool, and JSON types.
 
-agent/tests/      Bun test coverage for the runtime, tools, and provider glue.
+z-ai/src/
+  provider.ts     Provider interface.
+  events.ts       Provider stream events.
+  openrouter.ts   OpenRouter provider adapter.
+  openrouter/     OpenRouter conversion and tool-call buffering.
+
+z-tui/src/
+  cli.ts          Interactive terminal harness.
+  terminal-renderer.ts Terminal renderer for agent events.
+
+z-Agent/test/     Agent runtime, tools, session, and loop coverage.
+z-ai/test/        Provider conversion and OpenRouter coverage.
 ```
 
 ## Runtime Flow
 
 1. The CLI creates a workspace rooted at `process.cwd()`.
 2. Built-in tools are registered in a `ToolRegistry`.
-3. `OpenRouterProvider` streams assistant deltas and tool-call deltas.
-4. `runAgentLoop` appends messages to `ConversationState`.
-5. Tool calls are executed through `ToolExecutor`.
-6. Tool results are appended and sent back to the provider until the model stops,
-   the run is aborted, an error occurs, or the iteration budget is exhausted.
+3. `AgentEngine` owns the provider, registry, prompt builder, cancellation, and
+   `ConversationState`.
+4. `runAgentLoop` starts a run and turn, appends the user entry, builds provider
+   context, and streams from the provider.
+5. Assistant messages and tool results are appended as ordered
+   `ConversationEntry` records with `sessionId`, `runId`, `turnId`, and
+   `entryId`.
+6. Tool calls are executed through `ToolExecutor`; tool result entries link back
+   to the assistant entry that requested them.
+7. The turn is completed, failed, or aborted, and lifecycle events are emitted
+   with stable session/run/turn identifiers.
+
+## Session History
+
+`ConversationState` is backed by append-only session history rather than a raw
+message array. The stored history is the source of truth; provider messages are
+derived through a `ContextBuilder`.
+
+Current session primitives:
+
+- `SessionMetadata` identifies the long-lived conversation.
+- `TurnMetadata` tracks active, completed, failed, and aborted turns.
+- `ConversationEntry` stores ordered user, assistant, and tool-result messages.
+- `DefaultContextBuilder` rebuilds provider messages in sequence order.
+- `InMemorySessionStore` and `JsonlSessionStore` provide session persistence
+  adapters.
 
 ## Development
 
-Run the test script:
+Run focused tests with Vitest:
 
 ```sh
-bun run test
+bunx vitest --run z-Agent/test/session-store.test.ts
 ```
 
-The test suite uses Bun's test runner and covers:
+The current test coverage includes:
 
 - iteration budgeting
 - prompt building
@@ -97,7 +131,9 @@ The test suite uses Bun's test runner and covers:
 - bash command execution
 - OpenRouter message and tool conversion
 - streamed tool-call buffering
-- agent loop events, errors, aborts, and budget exhaustion
+- session snapshots and context rebuilding
+- in-memory and JSONL session stores
+- agent loop lifecycle events, errors, aborts, and budget exhaustion
 
 ## Configuration
 
@@ -105,4 +141,4 @@ The test suite uses Bun's test runner and covers:
 `https://openrouter.ai/api/v1`.
 
 The default model and iteration limit are currently configured in
-`agent/src/cli/cli.ts`.
+`z-tui/src/cli.ts`.
