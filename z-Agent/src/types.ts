@@ -50,10 +50,6 @@ export type ToolResultMessage = {
 
 export type Message = UserMessage | AssistantMessage | ToolResultMessage;
 
-export type ConversationState = {
-  messages: Message[];
-};
-
 export type ToolDefinition = {
   name: string;
   description: string;

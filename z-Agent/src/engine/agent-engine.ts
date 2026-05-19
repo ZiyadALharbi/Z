@@ -1,7 +1,7 @@
 /*
 AgentEngine
 
-Thin stateful wrapper around the pure AgentEngine Loop.
+Stateful wrapper around the Agent Loop.
 Owns provider configuration, tool registration, conversation state, and
 cancellation for an interactive session.
 */
@@ -14,15 +14,19 @@ import { SystemPromptBuilder } from "../harness/system_prompt";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 import { runAgentLoop } from "./loop";
-import {
-  ConversationState,
-} from "./conversation-state";
-import type { SessionMetadata } from "../harness/types";
+import { ConversationState } from "./conversation-state";
+import type {
+  ConversationEntry,
+  SessionMetadata,
+  SessionSnapshot,
+} from "../harness/types";
+
 export type AgentEngineOptions = {
   provider: LLMProvider;
   registry: ToolRegistry;
   promptBuilder?: SystemPromptBuilder;
   maxIterations?: number;
+  conversation?: ConversationState;
 };
 
 export class AgentEngine {
@@ -30,14 +34,15 @@ export class AgentEngine {
   private readonly registry: ToolRegistry;
   private readonly promptBuilder: SystemPromptBuilder;
   private readonly maxIterations: number;
-  private readonly conversation = new ConversationState();
+  private readonly conversation: ConversationState;
   private abortController?: AbortController;
 
   constructor(options: AgentEngineOptions) {
     this.provider = options.provider;
     this.registry = options.registry;
     this.promptBuilder = options.promptBuilder ?? new SystemPromptBuilder();
-    this.maxIterations = options.maxIterations ?? 20; //temp number
+    this.maxIterations = options.maxIterations ?? 20;
+    this.conversation = options.conversation ?? new ConversationState();
   }
 
   run(prompt: string): AsyncIterable<AgentEngineEvent> {
@@ -63,7 +68,15 @@ export class AgentEngine {
     return this.conversation.snapshot();
   }
 
-  getConversationMetadata(): Readonly<SessionMetadata> {
+  getEntries(): readonly ConversationEntry[] {
+    return this.conversation.getEntries();
+  }
+
+  getSessionSnapshot(): SessionSnapshot {
+    return this.conversation.getSessionSnapshot();
+  }
+
+  getSessionMetadata(): Readonly<SessionMetadata> {
     return this.conversation.getMetadata();
   }
 }
