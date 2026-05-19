@@ -1,3 +1,8 @@
+/**
+ * It should contain only system prompt content. we need to change the builder works
+ */
+
+
 import type { ToolDefinition } from "../types";
 
 export type SystemPromptBuilderOptions = {

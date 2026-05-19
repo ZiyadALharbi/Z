@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { StreamEvent } from "../src/ai/events";
-import type { LLMContext, LLMProvider } from "../src/ai/provider";
+import type { StreamEvent } from "../../z-ai/src/events";
+import type { LLMContext, LLMProvider } from "../../z-ai/src/provider";
 import { AgentEngine } from "../src/engine/agent-engine";
 import { ToolRegistry } from "../src/registry";
 

@@ -6,7 +6,7 @@ OpenAI-compatible wire format used by OpenRouter.
 */
 
 import OpenAI from "openai";
-import type { Message, ToolDefinition } from "../../types";
+import type { Message, ToolDefinition } from "../../../z-Agent/src/types";
 
 export function toOpenRouterMessages(
   messages: Message[],

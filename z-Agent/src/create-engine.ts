@@ -5,14 +5,14 @@ Builds the runtime AgentEngine used by the CLI harness. This keeps provider,
 workspace, and tool wiring out of the interactive prompt loop.
 */
 
-import { OpenRouterProvider } from "../ai/openrouter";
-import { AgentEngine } from "../engine/agent-engine";
-import { ToolRegistry } from "../registry";
-import { BashTool } from "../tools/bash";
-import { GrepTool } from "../tools/grep";
-import { ListFilesTool } from "../tools/list-files";
-import { ReadFileTool } from "../tools/read-file";
-import { Workspace } from "../workspace/workspace";
+import { OpenRouterProvider } from "../../z-ai/src/openrouter";
+import { AgentEngine } from "./engine/agent-engine";
+import { ToolRegistry } from "./registry";
+import { BashTool } from "./tools/bash";
+import { GrepTool } from "./tools/grep";
+import { ListFilesTool } from "./tools/list-files";
+import { ReadFileTool } from "./tools/read-file";
+import { Workspace } from "./workspace/workspace";
 
 export type CliEngineConfig = {
   model: string;

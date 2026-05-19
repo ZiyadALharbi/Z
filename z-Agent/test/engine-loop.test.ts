@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { IterationBudget } from "../src/budget";
-import type { StreamEvent } from "../src/ai/events";
-import type { LLMContext, LLMProvider } from "../src/ai/provider";
+import type { StreamEvent } from "../../z-ai/src/events";
+import type { LLMContext, LLMProvider } from "../../z-ai/src/provider";
 import { ConversationState } from "../src/engine/conversation-state";
 import { runAgentLoop } from "../src/engine/loop";
-import { SystemPromptBuilder } from "../src/prompt/builder";
+import { SystemPromptBuilder } from "../src/harness/system_prompt";
 import { ToolRegistry } from "../src/registry";
 import { ToolExecutor } from "../src/tools/executor";
 import type { AgentEngineEvent } from "../src/engine/events";

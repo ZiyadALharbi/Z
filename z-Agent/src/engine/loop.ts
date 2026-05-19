@@ -1,9 +1,9 @@
 import { IterationBudget } from "../budget";
-import type { LLMProvider } from "../ai/provider";
+import type { LLMProvider } from "../../../z-ai/src/provider";
 import { ToolRegistry } from "../registry";
 import type { AssistantMessage, ToolCallBlock, UserMessage } from "../types";
 import type { ConversationState } from "./conversation-state";
-import { SystemPromptBuilder } from "../prompt/builder";
+import { SystemPromptBuilder } from "../harness/system_prompt";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 
@@ -24,12 +24,15 @@ export async function* runAgentLoop(
   const toolExecutor =
     options.toolExecutor ?? new ToolExecutor(options.registry);
 
+  const runId = crypto.randomUUID();
+  const turn = options.conversation.startTurn(runId);
+
   const userMessage: UserMessage = {
     role: "user",
     content: options.prompt,
   };
 
-  options.conversation.append(userMessage);
+  options.conversation.append(userMessage, { runId, turnId: turn.id });
 
   yield {
     type: "run_started",
@@ -39,11 +42,13 @@ export async function* runAgentLoop(
   let iteration = 0;
   while (true) {
     if (options.signal?.aborted) {
+      options.conversation.abortTurn(turn.id);
       yield { type: "run_finished", stopReason: "aborted" };
       return;
     }
 
     if (!options.budget.consume()) {
+      options.conversation.completeTurn(turn.id);
       yield { type: "run_finished", stopReason: "budget_exhausted" };
       return;
     }
@@ -85,7 +90,7 @@ export async function* runAgentLoop(
           errorMessage: event.message,
         };
 
-        options.conversation.append(message);
+        options.conversation.append(message, { runId, turnId: turn.id });
 
         yield {
           type: "error",
@@ -96,6 +101,8 @@ export async function* runAgentLoop(
           type: "assistant_message",
           message,
         };
+
+        options.conversation.failTurn(turn.id);
 
         yield {
           type: "run_finished",
@@ -120,7 +127,7 @@ export async function* runAgentLoop(
         errorMessage,
       };
 
-      options.conversation.append(message);
+      options.conversation.append(message, { runId, turnId: turn.id });
 
       yield {
         type: "error",
@@ -132,6 +139,8 @@ export async function* runAgentLoop(
         message,
       };
 
+      options.conversation.failTurn(turn.id);
+
       yield {
         type: "run_finished",
         stopReason: "error",
@@ -140,7 +149,10 @@ export async function* runAgentLoop(
       return;
     }
 
-    options.conversation.append(assistantMessage);
+    const assistantEntry = options.conversation.append(assistantMessage, {
+      runId,
+      turnId: turn.id,
+    });
 
     yield {
       type: "assistant_message",
@@ -150,6 +162,7 @@ export async function* runAgentLoop(
     const toolCalls = getToolCalls(assistantMessage);
 
     if (toolCalls.length === 0) {
+      options.conversation.completeTurn(turn.id);
       yield {
         type: "run_finished",
         stopReason: assistantMessage.stopReason,
@@ -160,6 +173,7 @@ export async function* runAgentLoop(
 
     for (const toolCall of toolCalls) {
       if (options.signal?.aborted) {
+        options.conversation.abortTurn(turn.id);
         yield { type: "run_finished", stopReason: "aborted" };
         return;
       }
@@ -171,7 +185,11 @@ export async function* runAgentLoop(
 
       const result = await toolExecutor.execute(toolCall, options.signal);
 
-      options.conversation.append(result);
+      options.conversation.append(result, {
+        runId,
+        turnId: turn.id,
+        parentEntryId: assistantEntry.id,
+      });
 
       yield {
         type: "tool_finished",

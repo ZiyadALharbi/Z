@@ -7,7 +7,7 @@ JSON across separate stream chunks.
 */
 
 import type OpenAI from "openai";
-import type { ToolCallBlock } from "../../types";
+import type { ToolCallBlock } from "../../../z-Agent/src/types";
 import { parseToolArguments } from "../tool-arguments";
 
 type BufferedToolCall = {

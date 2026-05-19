@@ -9,7 +9,7 @@ construction and terminal rendering live in focused CLI modules.
 
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { createCliEngine } from "./create-engine";
+import { createCliEngine } from "../../z-Agent/src/create-engine";
 import { TerminalRenderer } from "./terminal-renderer";
 
 const model = "moonshotai/kimi-k2.6";

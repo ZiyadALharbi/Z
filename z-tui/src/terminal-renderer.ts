@@ -5,7 +5,7 @@ Renders AgentEngine events and CLI chrome. It owns ANSI formatting, markdown-ish
 line styling, and per-run display stats.
 */
 
-import type { AgentEngineEvent } from "../engine/events";
+import type { AgentEngineEvent } from "../../z-Agent/src/engine/events";
 
 const ansi = {
   reset: "\x1b[0m",

@@ -6,7 +6,7 @@ Invalid arguments are represented as parse-error objects so ToolExecutor can
 return a normal Tool Result instead of crashing the AgentEngine Loop.
 */
 
-import type { JsonObject, JsonValue } from "../types";
+import type { JsonObject, JsonValue } from "../../z-Agent/src/types";
 
 export function parseToolArguments(argumentsText: string): JsonObject {
   if (argumentsText.trim().length === 0) {

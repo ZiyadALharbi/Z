@@ -1,4 +1,4 @@
-import type { Message, ToolDefinition } from "../types";
+import type { Message, ToolDefinition } from "../../z-Agent/src/types";
 import type { StreamEvent } from "./events";
 
 export type LLMContext = {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { toOpenRouterMessages, toOpenRouterTool } from "../src/ai/openrouter/convert";
-import { ToolCallBuffer } from "../src/ai/openrouter/tool-call-buffer";
-import type { Message, ToolDefinition } from "../src/types";
+import { toOpenRouterMessages, toOpenRouterTool } from "../src/openrouter/convert";
+import { ToolCallBuffer } from "../src/openrouter/tool-call-buffer";
+import type { Message, ToolDefinition } from "../../z-Agent/src/types";
 
 describe("OpenRouter conversion", () => {
   test("converts internal messages to OpenRouter chat messages", () => {

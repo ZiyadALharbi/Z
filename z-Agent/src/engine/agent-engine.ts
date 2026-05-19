@@ -7,18 +7,17 @@ cancellation for an interactive session.
 */
 
 import { IterationBudget } from "../budget";
-import type { LLMProvider } from "../ai/provider";
+import type { LLMProvider } from "../../../z-ai/src/provider";
 import { ToolRegistry } from "../registry";
 import type { Message } from "../types";
-import { SystemPromptBuilder } from "../prompt/builder";
+import { SystemPromptBuilder } from "../harness/system_prompt";
 import { ToolExecutor } from "../tools/executor";
 import type { AgentEngineEvent } from "./events";
 import { runAgentLoop } from "./loop";
 import {
   ConversationState,
-  type ConversationMetadata,
 } from "./conversation-state";
-
+import type { SessionMetadata } from "../harness/types";
 export type AgentEngineOptions = {
   provider: LLMProvider;
   registry: ToolRegistry;
@@ -64,7 +63,7 @@ export class AgentEngine {
     return this.conversation.snapshot();
   }
 
-  getConversationMetadata(): Readonly<ConversationMetadata> {
+  getConversationMetadata(): Readonly<SessionMetadata> {
     return this.conversation.getMetadata();
   }
 }
