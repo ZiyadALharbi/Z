@@ -1,11 +1,16 @@
 import { IterationBudget } from "../budget";
 import type { LLMProvider } from "../../../z-ai/src/provider";
 import { ToolRegistry } from "../registry";
-import type { AssistantMessage, ToolCallBlock, UserMessage } from "../types";
+import type {
+  AssistantMessage,
+  ToolCallBlock,
+  ToolResultMessage,
+  UserMessage,
+} from "../types";
 import type { ConversationState } from "./conversation-state";
 import { SystemPromptBuilder } from "../harness/system_prompt";
 import { ToolExecutor } from "../tools/executor";
-import type { AgentEngineEvent } from "./events";
+import type { AgentEvent } from "./events";
 
 export type RunAgentLoopOptions = {
   prompt: string;
@@ -20,93 +25,104 @@ export type RunAgentLoopOptions = {
 
 export async function* runAgentLoop(
   options: RunAgentLoopOptions,
-): AsyncIterable<AgentEngineEvent> {
+): AsyncIterable<AgentEvent> {
   const toolExecutor =
     options.toolExecutor ?? new ToolExecutor(options.registry);
 
   const runId = crypto.randomUUID();
-  const turn = options.conversation.startTurn(runId);
-  const scope = {
-    sessionId: turn.sessionId,
-    runId,
-    turnId: turn.id,
-  };
-
-  const userMessage: UserMessage = {
-    role: "user",
-    content: options.prompt,
-  };
-
-  const userEntry = options.conversation.append(userMessage, {
-    runId,
-    turnId: turn.id,
-  });
+  let shouldAppendPrompt = true;
 
   yield {
-    type: "run_started",
+    type: "agent_start",
     prompt: options.prompt,
-    ...scope,
   };
 
-  yield {
-    type: "turn_started",
-    turn,
-    ...scope,
-  };
-
-  yield {
-    type: "message_appended",
-    entry: userEntry,
-    ...scope,
-  };
-
-  let iteration = 0;
   while (true) {
-    if (options.signal?.aborted) {
-      const finishedTurn = options.conversation.abortTurn(turn.id);
+    const turn = options.conversation.startTurn(runId); // UPDATED: one persisted turn per assistant cycle.
+
+    if (shouldAppendPrompt) {
+      const userMessage: UserMessage = {
+        role: "user",
+        content: options.prompt,
+        timestamp: Date.now(),
+      };
+
+      options.conversation.append(userMessage, {
+        runId,
+        turnId: turn.id,
+      });
 
       yield {
-        type: "turn_finished",
-        turn: finishedTurn,
-        stopReason: "aborted",
-        ...scope,
+        type: "message_start",
+        message: userMessage,
       };
 
       yield {
-        type: "run_finished",
-        stopReason: "aborted",
-        ...scope,
+        type: "message_end",
+        message: userMessage,
+      };
+
+      shouldAppendPrompt = false;
+    }
+
+    if (options.signal?.aborted) {
+      const message = createErrorAssistantMessage("Agent execution aborted.");
+
+      options.conversation.append(message, {
+        runId,
+        turnId: turn.id,
+      });
+
+      options.conversation.abortTurn(turn.id);
+
+      yield { type: "message_start", message };
+      yield { type: "message_end", message };
+
+      yield {
+        type: "turn_end",
+        message,
+        toolResults: [],
+      };
+
+      yield {
+        type: "agent_end",
+        messages: [...options.conversation.snapshot()],
       };
 
       return;
     }
 
     if (!options.budget.consume()) {
-      const finishedTurn = options.conversation.completeTurn(turn.id);
+      const message = createErrorAssistantMessage(
+        "Agent iteration budget exhausted.",
+      );
+
+      options.conversation.append(message, {
+        runId,
+        turnId: turn.id,
+      });
+
+      options.conversation.completeTurn(turn.id);
+
+      yield { type: "message_start", message };
+      yield { type: "message_end", message };
 
       yield {
-        type: "turn_finished",
-        turn: finishedTurn,
-        stopReason: "budget_exhausted",
-        ...scope,
+        type: "turn_end",
+        message,
+        toolResults: [],
       };
 
       yield {
-        type: "run_finished",
-        stopReason: "budget_exhausted",
-        ...scope,
+        type: "agent_end",
+        messages: [...options.conversation.snapshot()],
       };
 
       return;
     }
 
-    iteration += 1;
-
     yield {
-      type: "iteration_started",
-      iteration,
-      remainingIterations: options.budget.getRemaining(),
-      ...scope,
+      type: "turn_start", // UPDATED: now matches the active ConversationState turn.
     };
 
     const systemPrompt = options.promptBuilder.build(
@@ -124,58 +140,42 @@ export async function* runAgentLoop(
       options.signal,
     )) {
       if (event.type === "text_delta") {
+        const partialMessage: AssistantMessage = {
+          role: "assistant",
+          content: [{ type: "text", text: event.text }],
+          stopReason: "stop",
+          timestamp: Date.now(),
+        };
+
         yield {
-          type: "text",
-          text: event.text,
-          ...scope,
+          type: "message_update",
+          message: partialMessage,
+          streamEvent: event,
         };
       }
 
       if (event.type === "error") {
-        const message: AssistantMessage = {
-          role: "assistant",
-          content: [],
-          stopReason: "error",
-          errorMessage: event.message,
-        };
+        const message = createErrorAssistantMessage(event.message);
 
-        const errorEntry = options.conversation.append(message, {
+        options.conversation.append(message, {
           runId,
           turnId: turn.id,
         });
 
-        yield {
-          type: "error",
-          message: event.message,
-          ...scope,
-        };
+        options.conversation.failTurn(turn.id);
+
+        yield { type: "message_start", message };
+        yield { type: "message_end", message };
 
         yield {
-          type: "message_appended",
-          entry: errorEntry,
-          ...scope,
-        };
-
-        yield {
-          type: "assistant_message",
+          type: "turn_end",
           message,
-          entryId: errorEntry.id,
-          ...scope,
-        };
-
-        const finishedTurn = options.conversation.failTurn(turn.id);
-
-        yield {
-          type: "turn_finished",
-          turn: finishedTurn,
-          stopReason: "error",
-          ...scope,
+          toolResults: [],
         };
 
         yield {
-          type: "run_finished",
-          stopReason: "error",
-          ...scope,
+          type: "agent_end",
+          messages: [...options.conversation.snapshot()],
         };
 
         return;
@@ -187,146 +187,115 @@ export async function* runAgentLoop(
     }
 
     if (!assistantMessage) {
-      const errorMessage =
-        "Provider stream ended without a final assistant message.";
-      const message: AssistantMessage = {
-        role: "assistant",
-        content: [],
-        stopReason: "error",
-        errorMessage,
-      };
+      const message = createErrorAssistantMessage(
+        "Provider stream ended without a final assistant message.",
+      );
 
-      const errorEntry = options.conversation.append(message, {
+      options.conversation.append(message, {
         runId,
         turnId: turn.id,
       });
 
-      yield {
-        type: "error",
-        message: errorMessage,
-        ...scope,
-      };
+      options.conversation.failTurn(turn.id);
+
+      yield { type: "message_start", message };
+      yield { type: "message_end", message };
 
       yield {
-        type: "message_appended",
-        entry: errorEntry,
-        ...scope,
-      };
-
-      yield {
-        type: "assistant_message",
+        type: "turn_end",
         message,
-        entryId: errorEntry.id,
-        ...scope,
-      };
-
-      const finishedTurn = options.conversation.failTurn(turn.id);
-
-      yield {
-        type: "turn_finished",
-        turn: finishedTurn,
-        stopReason: "error",
-        ...scope,
+        toolResults: [],
       };
 
       yield {
-        type: "run_finished",
-        stopReason: "error",
-        ...scope,
+        type: "agent_end",
+        messages: [...options.conversation.snapshot()],
       };
 
       return;
     }
 
-    const assistantEntry = options.conversation.append(assistantMessage, {
+    options.conversation.append(assistantMessage, {
       runId,
       turnId: turn.id,
     });
 
     yield {
-      type: "message_appended",
-      entry: assistantEntry,
-      ...scope,
+      type: "message_start",
+      message: assistantMessage,
     };
 
     yield {
-      type: "assistant_message",
+      type: "message_end",
       message: assistantMessage,
-      entryId: assistantEntry.id,
-      ...scope,
     };
 
     const toolCalls = getToolCalls(assistantMessage);
-
-    if (toolCalls.length === 0) {
-      const finishedTurn = options.conversation.completeTurn(turn.id);
-
-      yield {
-        type: "turn_finished",
-        turn: finishedTurn,
-        stopReason: assistantMessage.stopReason,
-        ...scope,
-      };
-
-      yield {
-        type: "run_finished",
-        stopReason: assistantMessage.stopReason,
-        ...scope,
-      };
-
-      return;
-    }
+    const toolResults: ToolResultMessage[] = [];
 
     for (const toolCall of toolCalls) {
-      if (options.signal?.aborted) {
-        const finishedTurn = options.conversation.abortTurn(turn.id);
-
-        yield {
-          type: "turn_finished",
-          turn: finishedTurn,
-          stopReason: "aborted",
-          ...scope,
-        };
-
-        yield {
-          type: "run_finished",
-          stopReason: "aborted",
-          ...scope,
-        };
-
-        return;
-      }
-
       yield {
-        type: "tool_started",
-        toolCall,
-        parentEntryId: assistantEntry.id,
-        ...scope,
+        type: "tool_execution_start",
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        args: toolCall.arguments,
       };
 
       const result = await toolExecutor.execute(toolCall, options.signal);
 
-      const toolResultEntry = options.conversation.append(result, {
+      options.conversation.append(result, {
         runId,
         turnId: turn.id,
-        parentEntryId: assistantEntry.id,
       });
 
+      toolResults.push(result);
+
       yield {
-        type: "message_appended",
-        entry: toolResultEntry,
-        ...scope,
+        type: "tool_execution_end",
+        toolCallId: toolCall.id,
+        toolName: toolCall.name,
+        result,
+        isError: result.isError,
       };
 
       yield {
-        type: "tool_finished",
-        result,
-        entryId: toolResultEntry.id,
-        parentEntryId: assistantEntry.id,
-        ...scope,
+        type: "message_start",
+        message: result,
+      };
+
+      yield {
+        type: "message_end",
+        message: result,
       };
     }
+
+    options.conversation.completeTurn(turn.id);
+
+    yield {
+      type: "turn_end", // UPDATED: persisted turn closes at the same boundary as lifecycle turn.
+      message: assistantMessage,
+      toolResults,
+    };
+
+    if (toolCalls.length === 0) {
+      yield {
+        type: "agent_end",
+        messages: [...options.conversation.snapshot()],
+      };
+
+      return;
+    }
   }
+}
+
+function createErrorAssistantMessage(errorMessage: string): AssistantMessage {
+  return {
+    role: "assistant",
+    content: [],
+    stopReason: "error",
+    errorMessage,
+    timestamp: Date.now(),
+  };
 }
 
 function getToolCalls(message: AssistantMessage): ToolCallBlock[] {

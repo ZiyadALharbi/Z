@@ -1,71 +1,51 @@
-import type {
-  ConversationEntry,
-  RunId,
-  SessionId,
-  TurnId,
-  TurnMetadata,
-} from "../harness/types";
+import type { StreamEvent } from "../../../z-ai/src/events";
 import type {
   AssistantMessage,
-  StopReason,
+  Message,
   ToolCallBlock,
   ToolResultMessage,
 } from "../types";
 
-type EventScope = {
-  sessionId: SessionId;
-  runId: RunId;
-  turnId: TurnId;
-};
+export type AgentEvent =
+  // Agent lifecycle
+  | { type: "agent_start"; prompt: string }
+  | { type: "agent_end"; messages: Message[] }
 
-export type AgentEngineEvent =
-  | ({
-      type: "run_started";
-      prompt: string;
-    } & EventScope)
-  | ({
-      type: "turn_started";
-      turn: TurnMetadata;
-    } & EventScope)
-  | ({
-      type: "iteration_started";
-      iteration: number;
-      remainingIterations: number;
-    } & EventScope)
-  | ({
-      type: "text";
-      text: string;
-    } & EventScope)
-  | ({
-      type: "message_appended";
-      entry: ConversationEntry;
-    } & EventScope)
-  | ({
-      type: "assistant_message";
+  // Turn lifecycle: one assistant response plus tool calls/results.
+  | { type: "turn_start" }
+  | {
+      type: "turn_end";
       message: AssistantMessage;
-      entryId: string;
-    } & EventScope)
-  | ({
-      type: "tool_started";
-      toolCall: ToolCallBlock;
-      parentEntryId: string;
-    } & EventScope)
-  | ({
-      type: "tool_finished";
-      result: ToolResultMessage;
-      entryId: string;
-      parentEntryId: string;
-    } & EventScope)
-  | ({
-      type: "turn_finished";
-      turn: TurnMetadata;
-      stopReason: StopReason;
-    } & EventScope)
-  | ({
-      type: "error";
-      message: string;
-    } & EventScope)
-  | ({
-      type: "run_finished";
-      stopReason: StopReason;
-    } & EventScope);
+      toolResults: ToolResultMessage[];
+    }
+
+  // Message lifecycle.
+  | { type: "message_start"; message: Message }
+  | {
+      type: "message_update";
+      message: AssistantMessage;
+      streamEvent: StreamEvent;
+    }
+  | { type: "message_end"; message: Message }
+
+  // Tool execution lifecycle.
+  | {
+      type: "tool_execution_start";
+      toolCallId: string;
+      toolName: string;
+      args: ToolCallBlock["arguments"];
+    }
+  | {
+      type: "tool_execution_update";
+      toolCallId: string;
+      toolName: string;
+      args: ToolCallBlock["arguments"];
+      partialResult: any;
+    }
+  | {
+      type: "tool_execution_end";
+      toolCallId: string;
+      toolName: string;
+      result: any;
+      isError: boolean;
+    };

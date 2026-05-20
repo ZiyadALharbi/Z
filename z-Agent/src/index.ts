@@ -4,7 +4,7 @@ export { DefaultContextBuilder } from "./harness/context-builder";
 export { InMemorySessionStore } from "./harness/session/in-memory-session-store";
 export { JsonlSessionStore } from "./harness/session/jsonl-session-store";
 
-export type { AgentEngineEvent } from "./engine/events";
+export type { AgentEvent } from "./engine/events";
 export type { AgentEngineOptions } from "./engine/agent-engine";
 export type {
   AppendConversationMessageOptions,

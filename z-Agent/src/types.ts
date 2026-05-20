@@ -7,6 +7,21 @@ export type JsonValue =
 
 export type JsonObject = { [key: string]: JsonValue };
 
+export interface Usage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  totalTokens: number;
+  cost: {
+    input: number;
+    output: number;
+    cacheRead: number;
+    cacheWrite: number;
+    total: number;
+  };
+}
+
 export type StopReason =
   | "stop"
   | "tool_calls"
@@ -14,43 +29,47 @@ export type StopReason =
   | "aborted"
   | "budget_exhausted";
 
-export type TextBlock = {
+export interface TextBlock {
   type: "text";
   text: string;
-};
+}
 
-export type ToolCallBlock = {
+export interface ToolCallBlock {
   type: "toolCall";
   id: string;
   name: string;
-  arguments: JsonObject;
-};
+  arguments: Record<string, any>;
+}
 
-export type ContentBlock = TextBlock | ToolCallBlock;
-
-export type UserMessage = {
+export interface UserMessage {
   role: "user";
-  content: string | ContentBlock[];
-};
+  content: string | TextBlock[];
+  timestamp: number;
+}
 
-export type AssistantMessage = {
+export interface AssistantMessage {
   role: "assistant";
-  content: ContentBlock[];
+  content: (TextBlock | ToolCallBlock)[];
+  // model: string;
+  // usage: Usage;
   stopReason: StopReason;
   errorMessage?: string;
-};
+  timestamp: number;
+}
 
-export type ToolResultMessage = {
+export interface ToolResultMessage {
   role: "toolResult";
   toolCallId: string;
   toolName: string;
-  content: string;
+  content: TextBlock[];
+  details?: any; // will be changed later
   isError: boolean;
-};
+  timestamp: number;
+}
 
 export type Message = UserMessage | AssistantMessage | ToolResultMessage;
 
-export type ToolDefinition = {
+export interface ToolDefinition {
   name: string;
   description: string;
   parameters: {
@@ -58,8 +77,9 @@ export type ToolDefinition = {
     properties: Record<string, unknown>;
     required?: string[];
   };
-};
+}
 
+// these gonna be changed later
 export type ToolArgumentParser<TArgs extends JsonObject = JsonObject> = (
   args: JsonObject,
 ) => TArgs;

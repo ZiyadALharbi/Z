@@ -12,7 +12,7 @@ import { ToolRegistry } from "../registry";
 import type { Message } from "../types";
 import { SystemPromptBuilder } from "../harness/system_prompt";
 import { ToolExecutor } from "../tools/executor";
-import type { AgentEngineEvent } from "./events";
+import type { AgentEvent } from "./events";
 import { runAgentLoop } from "./loop";
 import { ConversationState } from "./conversation-state";
 import type {
@@ -45,7 +45,7 @@ export class AgentEngine {
     this.conversation = options.conversation ?? new ConversationState();
   }
 
-  run(prompt: string): AsyncIterable<AgentEngineEvent> {
+  run(prompt: string): AsyncIterable<AgentEvent> {
     this.abortController = new AbortController();
 
     return runAgentLoop({
