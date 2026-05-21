@@ -1,15 +1,15 @@
-export { AgentEngine } from "./engine/agent-engine";
-export { ConversationState } from "./engine/conversation-state";
+export { Agent } from "./agent";
+export { ConversationState } from "./harness/conversation-state";
 export { DefaultContextBuilder } from "./harness/context-builder";
 export { InMemorySessionStore } from "./harness/session/in-memory-session-store";
 export { JsonlSessionStore } from "./harness/session/jsonl-session-store";
 
-export type { AgentEvent } from "./engine/events";
-export type { AgentEngineOptions } from "./engine/agent-engine";
+export type { AgentEvent } from "./types";
+export type { AgentOptions } from "./agent";
 export type {
   AppendConversationMessageOptions,
   ConversationStateOptions,
-} from "./engine/conversation-state";
+} from "./harness/conversation-state";
 export type { ContextBuilder } from "./harness/context-builder";
 export type { SessionStore } from "./harness/session/session-store";
 export type {

@@ -1,7 +1,7 @@
 /*
 OpenRouter Conversion
 
-Translates internal AgentEngine messages and tool definitions into the
+Translates internal Agent messages and tool definitions into the
 OpenAI-compatible wire format used by OpenRouter.
 */
 

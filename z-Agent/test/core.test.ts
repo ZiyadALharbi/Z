@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IterationBudget } from "../src/budget";
-import { ToolRegistry } from "../src/registry";
+import { ToolRegistry } from "../src/harness/tools/registry";
 import { parseToolArguments } from "../../z-ai/src/tool-arguments";
 import { SystemPromptBuilder } from "../src/harness/system_prompt";
 import type { Tool } from "../src/types";

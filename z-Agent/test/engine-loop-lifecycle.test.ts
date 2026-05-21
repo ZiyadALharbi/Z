@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { IterationBudget } from "../src/budget";
-import { ConversationState } from "../src/engine/conversation-state";
-import type { AgentEngineEvent } from "../src/engine/events";
-import { runAgentLoop } from "../src/engine/loop";
+import { ConversationState } from "../src/harness/conversation-state";
+import type { AgentEvent } from "../src/types";
+import { runAgentLoop } from "../src/loop";
 import { SystemPromptBuilder } from "../src/harness/system_prompt";
-import { ToolRegistry } from "../src/registry";
+import { ToolRegistry } from "../src/harness/tools/registry";
 import type { StreamEvent } from "../../z-ai/src/events";
 import type { LLMContext, LLMProvider } from "../../z-ai/src/provider";
 import type { AssistantMessage, Tool } from "../src/types";
@@ -27,9 +27,9 @@ class ScriptedProvider implements LLMProvider {
 }
 
 async function collect(
-  iterable: AsyncIterable<AgentEngineEvent>,
-): Promise<AgentEngineEvent[]> {
-  const events: AgentEngineEvent[] = [];
+  iterable: AsyncIterable<AgentEvent>,
+): Promise<AgentEvent[]> {
+  const events: AgentEvent[] = [];
 
   for await (const event of iterable) {
     events.push(event);
@@ -82,12 +82,12 @@ function createLoopOptions(overrides: {
   };
 }
 
-function findEvent<TType extends AgentEngineEvent["type"]>(
-  events: readonly AgentEngineEvent[],
+function findEvent<TType extends AgentEvent["type"]>(
+  events: readonly AgentEvent[],
   type: TType,
-): Extract<AgentEngineEvent, { type: TType }> {
+): Extract<AgentEvent, { type: TType }> {
   const event = events.find(
-    (candidate): candidate is Extract<AgentEngineEvent, { type: TType }> =>
+    (candidate): candidate is Extract<AgentEvent, { type: TType }> =>
       candidate.type === type,
   );
 
@@ -130,7 +130,7 @@ describe("runAgentLoop lifecycle events", () => {
     const turnFinished = findEvent(events, "turn_finished");
     const runFinished = findEvent(events, "run_finished");
     const appendedMessages = events.filter(
-      (event): event is Extract<AgentEngineEvent, { type: "message_appended" }> =>
+      (event): event is Extract<AgentEvent, { type: "message_appended" }> =>
         event.type === "message_appended",
     );
 

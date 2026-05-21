@@ -1,7 +1,8 @@
 # Z
 
-Z is a TypeScript agent built on Bun. It provides an
-interactive terminal agent that streams model output, executes tool calls, keeps
+Z is a TypeScript agent built on Bun. The codebase is split into
+agent runtime, provider, and terminal UI packages. It provides an interactive
+terminal agent that streams model output, executes tool calls, keeps
 session-backed history, and talks to OpenRouter through the OpenAI-compatible
 chat completions API.
 
@@ -60,18 +61,27 @@ bin-based usage.
 
 ```text
 z-Agent/src/
-  engine/         Agent loop, stateful engine wrapper, events, conversation state.
-  harness/        System prompt, session/history types, context builder, stores.
-  tools/          Built-in tool definitions and execution.
-  workspace/      Workspace path safety and skip rules.
-  budget.ts       Iteration budget.
-  create-engine.ts CLI runtime wiring.
-  registry.ts     Tool registry.
-  types.ts        Shared message, tool, and JSON types.
+  agent.ts        Stateful AgentEngine wrapper.
+  loop.ts         Agent loop, streaming, tool execution, and lifecycle events.
+  budget.ts       Iteration budget helpers.
+  create-cli.ts   CLI runtime wiring.
+  index.ts        Package exports.
+  types.ts        Shared agent runtime types.
+  harness/
+    context-builder.ts     Provider context reconstruction from session history.
+    conversation-state.ts  Append-only conversation state.
+    harness.ts            Prompt and tool harness setup.
+    system_prompt.ts      Default system prompt.
+    types.ts              Session, turn, and conversation entry types.
+    session/              In-memory and JSONL session store adapters.
+    tools/                Built-in tool definitions, validation, registry, executor.
+  workspace/
+    workspace.ts  Workspace path safety and skip rules.
 
 z-ai/src/
   provider.ts     Provider interface.
-  events.ts       Provider stream events.
+  types.ts        Provider messages, stream events, and tool-call types.
+  tool-arguments.ts Tool-call argument parsing and validation.
   openrouter.ts   OpenRouter provider adapter.
   openrouter/     OpenRouter conversion and tool-call buffering.
 
@@ -81,6 +91,8 @@ z-tui/src/
 
 z-Agent/test/     Agent runtime, tools, session, and loop coverage.
 z-ai/test/        Provider conversion and OpenRouter coverage.
+z-ai/Docs/        Provider notes and task tracking.
+z-Agent/src/Docs/ Agent runtime notes and task tracking.
 ```
 
 ## Runtime Flow

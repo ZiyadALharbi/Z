@@ -3,12 +3,12 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { Workspace } from "../src/workspace/workspace";
-import { BashTool } from "../src/tools/bash";
-import { GrepTool } from "../src/tools/grep";
-import { ListFilesTool } from "../src/tools/list-files";
-import { ReadFileTool } from "../src/tools/read-file";
-import { ToolRegistry } from "../src/registry";
-import { ToolExecutor } from "../src/tools/executor";
+import { BashTool } from "../src/harness/tools/bash";
+import { GrepTool } from "../src/harness/tools/grep";
+import { ListFilesTool } from "../src/harness/tools/list-files";
+import { ReadFileTool } from "../src/harness/tools/read-file";
+import { ToolRegistry } from "../src/harness/tools/registry";
+import { ToolExecutor } from "../src/harness/tools/executor";
 import type { JsonObject, Tool } from "../src/types";
 
 const tempRoots: string[] = [];

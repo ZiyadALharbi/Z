@@ -2,12 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { IterationBudget } from "../src/budget";
 import type { StreamEvent } from "../../z-ai/src/events";
 import type { LLMContext, LLMProvider } from "../../z-ai/src/provider";
-import { ConversationState } from "../src/engine/conversation-state";
-import { runAgentLoop } from "../src/engine/loop";
+import { ConversationState } from "../src/harness/conversation-state";
+import { runAgentLoop } from "../src/loop";
 import { SystemPromptBuilder } from "../src/harness/system_prompt";
-import { ToolRegistry } from "../src/registry";
-import { ToolExecutor } from "../src/tools/executor";
-import type { AgentEngineEvent } from "../src/engine/events";
+import { ToolRegistry } from "../src/harness/tools/registry";
+import { ToolExecutor } from "../src/harness/tools/executor";
+import type { AgentEvent } from "../src/types";
 import type { AssistantMessage, Tool } from "../src/types";
 
 class ScriptedProvider implements LLMProvider {
@@ -34,9 +34,9 @@ class NeverCalledProvider implements LLMProvider {
 }
 
 async function collect(
-  iterable: AsyncIterable<AgentEngineEvent>,
-): Promise<AgentEngineEvent[]> {
-  const events: AgentEngineEvent[] = [];
+  iterable: AsyncIterable<AgentEvent>,
+): Promise<AgentEvent[]> {
+  const events: AgentEvent[] = [];
 
   for await (const event of iterable) {
     events.push(event);
@@ -102,7 +102,7 @@ function createLoopOptions(overrides: {
   };
 }
 
-describe("runAgentEngineLoop", () => {
+describe("runAgentLoop", () => {
   test("streams text and finishes when the assistant has no tool calls", async () => {
     const provider = new ScriptedProvider([
       [

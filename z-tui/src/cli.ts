@@ -3,20 +3,20 @@
 /*
 CLI Harness
 
-Owns the interactive readline loop, slash commands, and cancellation. Engine
+Owns the interactive readline loop, slash commands, and cancellation. Agent
 construction and terminal rendering live in focused CLI modules.
 */
 
 import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { createCliEngine } from "../../z-Agent/src/create-engine";
+import { createCli } from "../../z-Agent/src/create-cli";
 import { TerminalRenderer } from "./terminal-renderer";
 
 const model = "moonshotai/kimi-k2.6";
 const maxIterations = 20;
 const cwd = process.cwd();
 
-const { engine } = createCliEngine({
+const { cli } = createCli({
   model,
   maxIterations,
   cwd,
@@ -33,7 +33,7 @@ let isRunning = false;
 
 process.on("SIGINT", () => {
   if (isRunning) {
-    engine.abort();
+    cli.abort();
     return;
   }
 
@@ -78,7 +78,7 @@ async function runPrompt(prompt: string): Promise<void> {
   renderer.renderUserPrompt(prompt);
 
   try {
-    for await (const event of engine.run(prompt)) {
+    for await (const event of cli.run(prompt)) {
       renderer.renderEvent(event, stats);
     }
   } finally {

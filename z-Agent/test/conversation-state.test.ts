@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ConversationState } from "../src/engine/conversation-state";
+import { ConversationState } from "../src/harness/conversation-state";
 import type { AssistantMessage, Message, ToolResultMessage } from "../src/types";
 
 function assistantMessage(text: string): AssistantMessage {

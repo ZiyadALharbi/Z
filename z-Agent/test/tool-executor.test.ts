@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { ToolRegistry } from "../src/registry";
-import { ToolExecutor } from "../src/tools/executor";
+import { ToolRegistry } from "../src/harness/tools/registry";
+import { ToolExecutor } from "../src/harness/tools/executor";
 import type { Tool, ToolCallBlock } from "../src/types";
-import { requireString } from "../src/tools/args";
+import { requireString } from "../src/harness/tools/args";
 
 function toolCall(
   overrides: Partial<ToolCallBlock> = {},

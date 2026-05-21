@@ -3,7 +3,7 @@ Tool Argument Parsing
 
 Converts provider tool-call argument text into the internal JsonObject shape.
 Invalid arguments are represented as parse-error objects so ToolExecutor can
-return a normal Tool Result instead of crashing the AgentEngine Loop.
+return a normal Tool Result instead of crashing the Agent Loop.
 */
 
 import type { JsonObject, JsonValue } from "../../z-Agent/src/types";

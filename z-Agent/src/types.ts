@@ -1,3 +1,5 @@
+import { Container } from "postcss";
+import type { StreamEvent } from "../../z-ai/src/types"
 export type JsonPrimitive = string | number | boolean | null;
 
 export type JsonValue =
@@ -41,6 +43,8 @@ export interface ToolCallBlock {
   arguments: Record<string, any>;
 }
 
+export type ContentBlock = TextBlock | ToolCallBlock;
+
 export interface UserMessage {
   role: "user";
   content: string | TextBlock[];
@@ -79,6 +83,58 @@ export interface ToolDefinition {
   };
 }
 
+
+export type AgentEvent =
+  // Agent lifecycle
+  | { type: "agent_start"; prompt: string }
+  | { type: "agent_end"; messages: Message[] }
+
+  // Turn lifecycle: one assistant response plus tool calls/results.
+  | { type: "turn_start" }
+  | {
+      type: "turn_end";
+      message: AssistantMessage;
+      toolResults: ToolResultMessage[];
+    }
+
+  // Message lifecycle.
+  | { type: "message_start"; message: Message }
+  | {
+      type: "message_update";
+      message: AssistantMessage;
+      streamEvent: StreamEvent;
+    }
+  | { type: "message_end"; message: Message }
+
+  // Tool execution lifecycle.
+  | {
+      type: "tool_execution_start";
+      toolCallId: string;
+      toolName: string;
+      args: ToolCallBlock["arguments"];
+    }
+  | {
+      type: "tool_execution_update";
+      toolCallId: string;
+      toolName: string;
+      args: ToolCallBlock["arguments"];
+      partialResult: any;
+    }
+  | {
+      type: "tool_execution_end";
+      toolCallId: string;
+      toolName: string;
+      result: any;
+      isError: boolean;
+    };
+
+
+
+
+
+
+
+
 // these gonna be changed later
 export type ToolArgumentParser<TArgs extends JsonObject = JsonObject> = (
   args: JsonObject,
@@ -97,3 +153,4 @@ export type Tool<TArgs extends JsonObject = JsonObject> = {
   parseArgs?: ToolArgumentParser<TArgs>;
   handler: ToolHandler<TArgs>;
 };
+

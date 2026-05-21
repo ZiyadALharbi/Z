@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { StreamEvent } from "../../z-ai/src/events";
+import type { StreamEvent } from "../../z-ai/src/types";
 import type { LLMContext, LLMProvider } from "../../z-ai/src/provider";
-import { AgentEngine } from "../src/engine/agent-engine";
-import { ToolRegistry } from "../src/registry";
+import { Agent } from "../src/agent";
+import { ToolRegistry } from "../src/harness/tools/registry";
 
 class StaticProvider implements LLMProvider {
   readonly contexts: LLMContext[] = [];
@@ -15,6 +15,7 @@ class StaticProvider implements LLMProvider {
         role: "assistant",
         content: [{ type: "text", text: "ok" }],
         stopReason: "stop",
+        timestamp: Date.now(),
       },
     };
   }
@@ -26,19 +27,19 @@ async function drain(iterable: AsyncIterable<unknown>): Promise<void> {
   }
 }
 
-describe("AgentEngine", () => {
+describe("Agent", () => {
   test("preserves conversation across runs", async () => {
     const provider = new StaticProvider();
-    const engine = new AgentEngine({
+    const agent = new Agent({
       provider,
       registry: new ToolRegistry(),
       maxIterations: 2,
     });
 
-    await drain(engine.run("first"));
-    await drain(engine.run("second"));
+    await drain(agent.run("first"));
+    await drain(agent.run("second"));
 
-    expect(engine.getMessages()).toEqual([
+    expect(agent.getMessages()).toEqual([
       { role: "user", content: "first" },
       {
         role: "assistant",
@@ -64,12 +65,12 @@ describe("AgentEngine", () => {
   });
 
   test("exposes conversation metadata", () => {
-    const engine = new AgentEngine({
+    const agent = new Agent({
       provider: new StaticProvider(),
       registry: new ToolRegistry(),
     });
 
-    const metadata = engine.getConversationMetadata();
+    const metadata = agent.getConversationMetadata();
 
     expect(metadata.id.length).toBeGreaterThan(0);
     expect(metadata.createdAt).toBeInstanceOf(Date);

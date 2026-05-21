@@ -1,5 +1,5 @@
 import type { Message, ToolDefinition } from "../../z-Agent/src/types";
-import type { StreamEvent } from "./events";
+import type { StreamEvent } from "./types";
 
 export type LLMContext = {
   systemPrompt: string;

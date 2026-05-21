@@ -1,11 +1,11 @@
 /*
 Terminal Renderer
 
-Renders AgentEngine events and CLI chrome. It owns ANSI formatting, markdown-ish
+Renders Agent events and CLI chrome. It owns ANSI formatting, markdown-ish
 line styling, and per-run display stats.
 */
 
-import type { AgentEngineEvent } from "../../z-Agent/src/engine/events";
+import type { AgentEvent } from "../../z-Agent/src/types";
 
 const ansi = {
   reset: "\x1b[0m",
@@ -54,7 +54,7 @@ export class TerminalRenderer {
 
   renderShell(): void {
     const width = getWidth();
-    const title = "Z AgentEngine";
+    const title = "Z Agent";
     const rule = "─".repeat(Math.max(12, width - 2));
 
     writeLine(`${ansi.border}╭${rule}╮${ansi.reset}`);
@@ -92,7 +92,7 @@ export class TerminalRenderer {
     renderPanel("you", prompt, ansi.accent);
   }
 
-  renderEvent(event: AgentEngineEvent, stats: RunStats): void {
+  renderEvent(event: AgentEvent, stats: RunStats): void {
     if (event.type === "run_started") {
       renderStatus("thinking", "run started");
       return;
