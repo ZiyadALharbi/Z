@@ -8,8 +8,7 @@ tool-call buffering live in focused helper modules.
 
 import OpenAI from "openai";
 import type { AssistantMessage, ContentBlock, StopReason } from "../../z-Agent/src/types";
-import type { LLMContext, LLMProvider } from "./provider";
-import type { StreamEvent } from "./types";
+import type { AssistantMessageEvent, LLMContext, LLMProvider } from "./types";
 import { toOpenRouterMessages, toOpenRouterTool } from "./openrouter/convert";
 import { ToolCallBuffer } from "./openrouter/tool-call-buffer";
 
@@ -40,7 +39,7 @@ export class OpenRouterProvider implements LLMProvider {
   async *stream(
     context: LLMContext,
     signal?: AbortSignal,
-  ): AsyncIterable<StreamEvent> {
+  ): AsyncIterable<AssistantMessageEvent> {
     try {
       const contentBlocks: ContentBlock[] = [];
       let text = "";
