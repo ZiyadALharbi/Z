@@ -1,5 +1,5 @@
 
-import type { Static, TSchema } from "typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
 
 /**
  * Content returned by users, assistants, and tools.
@@ -45,7 +45,7 @@ export interface Usage {
   };
 }
 
-export type StopReason = "stop" | "length"| "tool_calls" | "error" | "aborted"; // or toolUse in general? 
+export type StopReason = "stop" | "length"| "tool_calls" | "error" | "aborted"; 
 
 export interface UserMessage {
   role: "user";
@@ -102,7 +102,7 @@ export interface LLMContext {
  * failures should be represented as final assistant messages with stopReason
  * "error" or "aborted" instead of escaping as thrown control flow.
  * 
- * The AssistantMessageEvent is taking From Pi "Pi/packages/ai/src/types.ts"
+ * The AssistantMessageEvent is taken From Pi "Pi/packages/ai/src/types.ts"
  */
  export type AssistantMessageEvent =
 	| { type: "start"; partial: AssistantMessage }
