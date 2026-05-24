@@ -1,4 +1,4 @@
-import type { JsonObject, ToolCallBlock, ToolResultMessage } from "../types";
+import type { JsonObject, ToolCall, ToolResultMessage } from "../../../../z-ai/src/types";
 import { ToolRegistry } from "../registry";
 import type { TextContent } from "../../../../z-ai/src/types";
 import { timeStamp } from "console";
@@ -20,7 +20,7 @@ export class ToolExecutor {
   }
 
   async execute(
-    toolCall: ToolCallBlock,
+    toolCall: ToolCall,
     signal?: AbortSignal,
   ): Promise<ToolResultMessage> {
     const tool = this.registry.get(toolCall.name);
@@ -67,7 +67,7 @@ export class ToolExecutor {
   }
 
   private errorResult(
-    toolCall: ToolCallBlock,
+    toolCall: ToolCall,
     content: string,
   ): ToolResultMessage {
     return {
