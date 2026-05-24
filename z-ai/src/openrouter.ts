@@ -7,7 +7,8 @@ tool-call buffering live in focused helper modules.
 */
 
 import OpenAI from "openai";
-import type { AssistantMessage, ContentBlock, StopReason } from "../../z-Agent/src/types";
+
+import type { AssistantMessage, AssistantContent } from "./types";
 import type { AssistantMessageEvent, LLMContext, LLMProvider } from "./types";
 import { toOpenRouterMessages, toOpenRouterTool } from "./openrouter/convert";
 import { ToolCallBuffer } from "./openrouter/tool-call-buffer";
@@ -35,82 +36,134 @@ export class OpenRouterProvider implements LLMProvider {
       baseURL: options.baseURL ?? "https://openrouter.ai/api/v1",
     });
   }
-
+  /**
+   * Stream an assistant response from OpenRouter.
+   *
+   * Provider adapters own wire-format quirks. The agent loop should only see
+   * provider-neutral assistant stream events and final assistant messages.
+   */
   async *stream(
     context: LLMContext,
     signal?: AbortSignal,
   ): AsyncIterable<AssistantMessageEvent> {
+    const contentBlocks: AssistantContent[] = [];
+    let text = "";
+    const toolCallBuffer = new ToolCallBuffer();
+  
+    let partial: AssistantMessage = {
+      role: "assistant",
+      content: [],
+      stopReason: "stop",
+      timestamp: Date.now(),
+    };
+  
+    yield { type: "start", partial };
+  
     try {
-      const contentBlocks: ContentBlock[] = [];
-      let text = "";
-      const toolCallBuffer = new ToolCallBuffer();
-
       const stream = await this.client.chat.completions.create(
         {
           model: this.model,
           stream: true,
-          messages: toOpenRouterMessages(
-            context.messages,
-            context.systemPrompt,
-          ),
-          tools: context.tools.map(toOpenRouterTool),
+          messages: toOpenRouterMessages(context.messages, context.systemPrompt),
+          tools: context.tools?.map(toOpenRouterTool) ?? [],
         },
         { signal },
       );
-
+  
       for await (const chunk of stream) {
         if (signal?.aborted) {
-          yield { type: "error", message: "Aborted by user" };
+          const abortedMessage: AssistantMessage = {
+            ...partial,
+            stopReason: "aborted",
+            errorMessage: "Aborted by user",
+            timestamp: Date.now(),
+          };
+  
+          yield {
+            type: "error",
+            reason: "aborted",
+            error: abortedMessage,
+          };
+  
           return;
         }
-
-        const choice = chunk.choices[0];
-        const delta = choice?.delta;
-
+  
+        const delta = chunk.choices[0]?.delta;
         const textDelta = delta?.content;
-
+  
         if (textDelta) {
+          if (text.length === 0) {
+            yield {
+              type: "text_start",
+              contentIndex: 0,
+              partial,
+            };
+          }
+  
           text += textDelta;
-          yield { type: "text_delta", text: textDelta };
+  
+          partial = {
+            ...partial,
+            content: [{ type: "text", text }],
+          };
+  
+          yield {
+            type: "text_delta",
+            contentIndex: 0,
+            delta: textDelta,
+            partial,
+          };
         }
-
+  
         for (const toolCallDelta of delta?.tool_calls ?? []) {
           toolCallBuffer.append(toolCallDelta);
         }
       }
-
+  
       if (text.length > 0) {
         contentBlocks.push({ type: "text", text });
-      }
-
-      const toolCalls = toolCallBuffer.toToolCalls();
-
-      for (const toolCall of toolCalls) {
-        contentBlocks.push(toolCall);
-
+  
         yield {
-          type: "tool_call",
-          id: toolCall.id,
-          name: toolCall.name,
-          arguments: toolCall.arguments,
+          type: "text_end",
+          contentIndex: 0,
+          content: text,
+          partial,
         };
       }
-
-      const stopReason: StopReason =
-        toolCalls.length > 0 ? "tool_calls" : "stop";
-
+  
+      for (const toolCall of toolCallBuffer.toToolCalls()) {
+        contentBlocks.push(toolCall);
+      }
+  
+      const stopReason = contentBlocks.some((block) => block.type === "toolCall")
+        ? "tool_calls"
+        : "stop";
+  
       const message: AssistantMessage = {
         role: "assistant",
         content: contentBlocks,
         stopReason,
         timestamp: Date.now(),
       };
-
-      yield { type: "done", message };
+  
+      yield {
+        type: "done",
+        reason: stopReason,
+        message,
+      };
     } catch (error) {
+      const errorMessage: AssistantMessage = {
+        role: "assistant",
+        content: [],
+        stopReason: "error",
+        errorMessage: error instanceof Error ? error.message : String(error),
+        timestamp: Date.now(),
+      };
+  
       yield {
         type: "error",
-        message: error instanceof Error ? error.message : String(error),
+        reason: "error",
+        error: errorMessage,
       };
     }
   }
