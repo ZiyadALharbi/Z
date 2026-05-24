@@ -1,5 +1,7 @@
 import type { JsonObject, ToolCallBlock, ToolResultMessage } from "../types";
 import { ToolRegistry } from "../registry";
+import type { TextContent } from "../../../../z-ai/src/types";
+import { timeStamp } from "console";
 
 export type ToolExecutorOptions = {
   maxOutputLength?: number;
@@ -52,8 +54,9 @@ export class ToolExecutor {
         role: "toolResult",
         toolCallId: toolCall.id,
         toolName: toolCall.name,
-        content: this.truncate(result),
+        content: textContent(this.truncate(result)),
         isError: false,
+        timeStamp: Date.now()
       };
     } catch (error) {
       return this.errorResult(
@@ -71,8 +74,9 @@ export class ToolExecutor {
       role: "toolResult",
       toolCallId: toolCall.id,
       toolName: toolCall.name,
-      content,
+      content: textContent(content),
       isError: true,
+      timeStamp: Date.now(),
     };
   }
 
@@ -82,6 +86,10 @@ export class ToolExecutor {
     }
     return `${output.slice(0, this.maxOutputLength)}\n\n[Tool output truncated]`;
   }
+}
+
+function textContent(text: string): TextContent[] {
+  return [{ type: "text", text }];
 }
 
 function hasParseError(args: JsonObject): boolean {
