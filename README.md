@@ -8,7 +8,7 @@
               a coding agent, built from three clean layers
 ```
 > [!WARNING]
-> The project WILL Be REBUILT from scratch. Everything here will change to suit the NEW ARCHITECTURE.
+> The project WILL BE REBUILT from scratch. Everything here will change to suit the NEW ARCHITECTURE.
 
 
 Z is a coding agent split into three independent layers. Each layer knows only
