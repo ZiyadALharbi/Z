@@ -8,9 +8,8 @@
               a coding agent, built from three clean layers
 ```
 > [!WARNING]
-> This warning block is visually highlighted by GitHub.
+> The project WILL Be REBUILT from scratch. Everything here will change to suit the NEW ARCHITECTURE.
 
-> **Pre-alpha.** Being rebuilt from scratch. Everything here will change.
 
 Z is a coding agent split into three independent layers. Each layer knows only
 about the one below it, so any piece can be swapped, tested, or reused on its own.
