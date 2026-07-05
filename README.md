@@ -7,7 +7,8 @@
                               ╚══════╝
               a coding agent, built from three clean layers
 ```
-<span style="color: yellow;">**Pre-alpha.** Being rebuilt from scratch. Everything here will change.</span>
+> [!WARNING]
+> This warning block is visually highlighted by GitHub.
 
 > **Pre-alpha.** Being rebuilt from scratch. Everything here will change.
 
