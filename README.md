@@ -7,7 +7,7 @@
                               ╚══════╝
               a coding agent, built from three clean layers
 ```
-<span style="color: yellow;">> **Pre-alpha.** Being rebuilt from scratch. Everything here will change.</span>
+> <span style="color: yellow;">**Pre-alpha.** Being rebuilt from scratch. Everything here will change.</span>
 
 > **Pre-alpha.** Being rebuilt from scratch. Everything here will change.
 
